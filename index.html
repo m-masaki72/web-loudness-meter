@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <title>Loudness Meter</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="panel">
+      <!-- メタリックパネル背景 -->
+      <canvas id="panel-bg"></canvas>
+
+      <!-- タイトルバー -->
+      <div id="title-bar">
+        <span class="title-text">LOUDNESS METER</span>
+        <span id="wake-lock-indicator" class="indicator off" title="Screen Wake Lock">⊙</span>
+      </div>
+
+      <!-- オシロスコープ -->
+      <section class="meter-section" id="scope-section">
+        <canvas id="oscilloscope"></canvas>
+        <div class="section-label">WAVEFORM</div>
+      </section>
+
+      <!-- LEDバーグラフ -->
+      <section class="meter-section" id="bar-section">
+        <canvas id="bar-meter"></canvas>
+      </section>
+
+      <!-- アナログ針メーター -->
+      <section class="meter-section" id="analog-section">
+        <canvas id="analog-meter"></canvas>
+      </section>
+
+      <!-- デジタル数値表示 -->
+      <div id="digital-display">
+        <div class="digit-group">
+          <div class="digit-value" id="val-dbfs">---.-</div>
+          <div class="digit-label">dBFS</div>
+        </div>
+        <div class="digit-group">
+          <div class="digit-value" id="val-dba">---.-</div>
+          <div class="digit-label">dBA</div>
+        </div>
+        <div class="digit-group">
+          <div class="digit-value" id="val-lufs-m">---.-</div>
+          <div class="digit-label">LUFS-M</div>
+        </div>
+        <div class="digit-group">
+          <div class="digit-value" id="val-lufs-i">---.-</div>
+          <div class="digit-label">LUFS-I</div>
+        </div>
+      </div>
+
+      <!-- コントロールバー -->
+      <div id="controls">
+        <button id="btn-start" class="ctl-btn btn-start">▶ START</button>
+        <button id="btn-rec" class="ctl-btn btn-rec" disabled>⏺ REC</button>
+        <button id="btn-stop" class="ctl-btn btn-stop" disabled>■ STOP</button>
+        <button id="btn-calibrate" class="ctl-btn btn-cal">CAL</button>
+      </div>
+
+      <!-- キャリブレーションパネル（初期非表示） -->
+      <div id="calibration-panel" class="hidden">
+        <p>現在の測定値: <span id="cal-current">---.-</span> dBFS</p>
+        <label>実際のdBSPL: <input id="cal-input" type="number" value="75" min="0" max="140" /></label>
+        <button id="cal-save">保存</button>
+        <button id="cal-cancel">キャンセル</button>
+      </div>
+
+      <!-- iOS案内（初期非表示） -->
+      <div id="ios-guide" class="hidden">
+        <p>📱 iOSでより正確な測定をするには、コントロールセンターで<br>マイクモードを<strong>「ワイドスペクトラム」</strong>に設定してください。</p>
+        <button id="ios-guide-close">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
