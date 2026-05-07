@@ -5,109 +5,110 @@
 |------|------|
 | ビルドツール | Vite + Vanilla JS |
 | LUFS実装 | 手書き（ITU-R BS.1770-4） |
-| PWA | 最初から対応 |
+| PWA | 対応（HTTPS環境のみ有効） |
 | UIスタイル | リアルハードウェアメーター風（MVMeter2参考） |
+| サーバ依存 | なし（`dist/` を直接ブラウザで開いて動作） |
 
 ---
 
-## フェーズ一覧
+## 実装済み機能
 
 ### Phase 1 — プロジェクトセットアップ ✅
 - [x] Vite + Vanilla JS 初期化
 - [x] PWA雛形（manifest.json + sw.js）
-- [x] ディレクトリ構成作成
-- [x] `vite dev` でlocalhost確認（http://localhost:5173）
+- [x] `.gitignore` 設定（node_modules / dist 除外）
+- [x] 初期コミット
 
 ### Phase 2 — コア計測エンジン ✅
-- [x] `getUserMedia`（AGC/echo/noise=false）+ `AudioContext`初期化
-- [x] `AnalyserNode` + RMS → dBFS計算
-- [x] `AudioWorkletNode` セットアップ（public/loudness-processor.js）
-- [x] K-weightingフィルター係数（sampleRate動的対応）
+- [x] `getUserMedia`（AGC / echo / noise = false）+ `AudioContext` 初期化
+- [x] `AnalyserNode` + RMS → dBFS 計算
+- [x] `AudioWorkletNode` — Blob URL 経由でロード（サーバ不要）
+- [x] K-weighting フィルター係数（sampleRate 動的対応）
 - [x] LUFS Momentary（400ms）/ Short-term（3s）/ Integrated（ゲーティング付き）
 
-### Phase 3 — A/C特性 + SPLキャリブレーション ✅
-- [x] A特性・C特性 Biquad係数実装（sampleRate対応）
-- [x] dBFS→dBSPL 疑似キャリブレーションUI（localStorage保存）
+### Phase 3 — A/C 特性 + SPL キャリブレーション ✅
+- [x] A 特性・C 特性 Biquad 係数実装（sampleRate 対応）
+- [x] dBFS → dBSPL 疑似キャリブレーション UI（localStorage 保存）
 
-### Phase 4 — リアルタイムUI（Canvas） ✅
+### Phase 4 — リアルタイム UI（Canvas） ✅
 - [x] メタリックパネル背景（ベゼル・スクリュー・グラデーション）
-- [x] オシロスコープ（発光グリーンライン・CRTスキャンライン・グロー）
-- [x] LEDバーグラフ（dBFS / dBA / LUFS-I の3本、セグメントグロー）
-- [x] アナログ針メーター（バネ物理モデル・金属盤面）
-- [x] 7セグメント風デジタル数値表示（グロー付き）
+- [x] オシロスコープ（発光グリーンライン・CRT スキャンライン・グロー）
+- [x] LED バーグラフ（dBFS / dBA / LUFS-I の 3 本、ピークホールド付き）
+- [x] アナログ針メーター（バネ物理モデル・金属盤面・ラジアルグラデーション）
+- [x] 7 セグメント風デジタル数値表示（グロー付き）
 
 ### Phase 5 — 録音・エクスポート ✅
-- [x] `MediaRecorder`（webm/opus）録音実装
-- [x] Web Share API（iOS対応）+ `<a>`ダウンロードfallback
+- [x] `MediaRecorder`（webm/opus、iOS は mp4 fallback）録音実装
+- [x] Web Share API（iOS 対応）+ `<a>` ダウンロード fallback
 
-### Phase 6 — モバイル対応 + PWA仕上げ ✅
-- [x] Screen Wake Lock + `visibilitychange`復帰ロジック
-- [x] iOSワイドスペクトラム設定案内UI
-- [ ] PWA manifest アイコン生成（要画像ファイル）
-- [ ] Service Worker キャッシュ戦略（本番ビルド時に調整要）
+### Phase 6 — モバイル対応 ✅
+- [x] Screen Wake Lock + `visibilitychange` 復帰ロジック
+- [x] iOS ワイドスペクトラム設定案内 UI（初回起動時のみ表示）
+- [x] `file://` で開いた場合は Service Worker 登録をスキップ
 
 ---
 
 ## ファイル構成
+
 ```
 web-loudness-meter/
+├── .gitignore
+├── CLAUDE.md
+├── PROGRESS.md
+├── README.md
 ├── index.html
 ├── manifest.json
-├── sw.js
-├── icons/
-├── src/
-│   ├── main.js
-│   ├── audio/
-│   │   ├── mic-capture.js         # getUserMedia + AudioContext
-│   │   ├── analyser.js            # AnalyserNode：波形 + dBFS
-│   │   ├── worklet/
-│   │   │   └── loudness-processor.js  # AudioWorkletProcessor
-│   │   ├── weighting.js           # Biquad係数（A/C/K）
-│   │   ├── calibration.js         # dBFS→dBSPL オフセット
-│   │   └── recorder.js            # MediaRecorder + エクスポート
-│   ├── ui/
-│   │   ├── oscilloscope.js        # Canvas：発光波形
-│   │   ├── bar-meter.js           # Canvas：LEDバーグラフ
-│   │   ├── analog-meter.js        # Canvas：アナログ針
-│   │   ├── panel.js               # Canvas：メタリックパネル
-│   │   └── wake-lock.js           # Screen Wake Lock
-│   └── utils/
-│       └── sample-rate.js
+├── sw.js                              # Service Worker（HTTPS のみ有効）
+├── vite.config.js                     # base: './' で file:// 対応
 ├── package.json
-└── vite.config.js
+├── public/
+│   └── loudness-processor.js          # ビルド前参照用（実際は ?raw で bundle）
+└── src/
+    ├── main.js                        # エントリー・UI イベント制御
+    ├── style.css
+    ├── audio/
+    │   ├── mic-capture.js             # getUserMedia + AudioContext + Worklet 初期化
+    │   ├── analyser.js                # AnalyserNode ラッパー（RMS / dBFS）
+    │   ├── weighting.js               # Biquad 係数生成（A / C / K 特性）
+    │   ├── calibration.js             # dBFS → dBSPL オフセット管理
+    │   ├── recorder.js                # MediaRecorder + Web Share API エクスポート
+    │   └── worklet/
+    │       └── loudness-processor.js  # AudioWorkletProcessor（LUFS / dBA / dBC）
+    ├── ui/
+    │   ├── oscilloscope.js            # Canvas：CRT 風発光波形
+    │   ├── bar-meter.js               # Canvas：LED バーグラフ
+    │   ├── analog-meter.js            # Canvas：アナログ針メーター
+    │   └── wake-lock.js               # Screen Wake Lock 管理
+    └── utils/
+        └── sample-rate.js             # sampleRate 検出・双一次変換ユーティリティ
 ```
 
 ---
 
-## 重要な実装ノート
+## 既知の課題・今後の改善点
 
-### オーディオパイプライン
-```
-getUserMedia (AGC/echo/noise=false)
-  ├─[A] AnalyserNode → dBFS(RMS) + 波形配列
-  ├─[B] AudioWorkletNode → LUFS M/S/I、dBA、dBC
-  └─[C] MediaRecorder → webm/opus録音
-```
-
-### Canvas リアル描画テクニック
-- `shadowBlur` + `shadowColor` → LEDグロー・オシロ発光
-- `createRadialGradient` → メーター盤面の金属質感
-- `createLinearGradient` → アルミパネル
-- 針アニメーション：`velocity += (target - current) * spring - velocity * damping`
-
-### iOS固有対処
-- getUserMedia後に `audioContext.resume()` 必須（Safari制約）
-- ファイル保存：`navigator.canShare({files:[...]})` → Web Share API → `<a>`fallback
-- Screen Wake Lock解除後の復帰：`visibilitychange`イベントで再取得
-
-### サンプルレート対応
-- `audioContext.sampleRate` を初期化時に確認（44100 / 48000 / 96000）
-- 双一次変換でBiquad係数を動的計算
+| 優先度 | 内容 |
+|--------|------|
+| 高 | PWA アイコン画像未作成（`icons/` フォルダが空） |
+| 高 | 動作確認未実施（実機でのマイク・LUFS 値検証） |
+| 中 | Canvas サイズが起動時固定のため、ウィンドウリサイズに未対応 |
+| 中 | LUFS Short-term 値の UI 表示（現在 Momentary と Integrated のみ） |
+| 低 | Service Worker キャッシュ戦略の本番最適化 |
+| 低 | スペクトラムアナライザー（FFT 表示）の追加 |
 
 ---
 
-## 検証方法
-1. `npm run dev` → localhost でマイクテスト（Chrome）
-2. ngrok or LAN HTTPS でスマートフォン実機確認
-3. iOS Safari + Android Chrome 両方で動作確認
-4. LUFS値を-23 LUFS基準音で照合
+## 動作確認手順
+
+```bash
+# 開発
+npm run dev        # http://localhost:5173
+
+# ビルド（サーバ不要版）
+npm run build      # dist/ 生成
+# → dist/index.html をブラウザで直接開く（Chrome 推奨）
+```
+
+**スマートフォンでの動作確認：**
+- GitHub Pages / Netlify 等にデプロイ（HTTPS 必須）
+- または `npm run dev` 起動後に LAN の IP（`http://192.168.x.x:5173`）でアクセス
