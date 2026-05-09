@@ -1,8 +1,7 @@
 const CACHE = 'loudness-meter-v1'
-const ASSETS = ['/', '/index.html', '/src/style.css', '/src/main.js']
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)))
+  e.waitUntil(caches.open(CACHE).then(c => c.add('./')))
   self.skipWaiting()
 })
 
@@ -17,6 +16,12 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached ?? fetch(e.request))
+    caches.match(e.request).then(cached => {
+      const fresh = fetch(e.request).then(res => {
+        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()))
+        return res
+      })
+      return cached ?? fresh
+    })
   )
 })

@@ -27,6 +27,7 @@ export class AnalogMeter {
     this._target  = ANGLE_MIN
     this._resize()
     this._drawStatic()
+    new ResizeObserver(() => { this._resize(); this._drawStatic() }).observe(canvas)
   }
 
   _resize() {
@@ -120,10 +121,10 @@ export class AnalogMeter {
     this._vel *= DAMPING
     this._angle += this._vel
 
-    const ctx = this.ctx, cx = this._cx, cy = this._cy, R = this._R
-
-    // 盤面を再描画（針の残像を消すため）
+    // 盤面を再描画（針の残像を消すため）_cx/_cy/_R もここで更新される
     this._drawStatic()
+
+    const ctx = this.ctx, cx = this._cx, cy = this._cy, R = this._R
 
     // 針
     const needleLen = R * 0.85

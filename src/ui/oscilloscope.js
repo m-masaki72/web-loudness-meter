@@ -3,6 +3,7 @@ export class Oscilloscope {
     this.canvas = canvas
     this.ctx    = canvas.getContext('2d')
     this._resize()
+    new ResizeObserver(() => { this._resize(); this.draw(null) }).observe(canvas)
   }
 
   _resize() {

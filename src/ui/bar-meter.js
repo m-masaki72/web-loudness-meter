@@ -29,6 +29,7 @@ export class BarMeter {
     this._peaks = [DB_MIN, DB_MIN, DB_MIN]
     this._peakTimers = [0, 0, 0]
     this._labels = ['dBFS', 'dBA', 'LUFS-I']
+    new ResizeObserver(() => { this._resize(); this.draw() }).observe(canvas)
   }
 
   _resize() {
