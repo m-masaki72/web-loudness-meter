@@ -9,15 +9,15 @@ const WARN_DB = -12
 const CLIP_DB = -3
 
 const SEG_COUNT = 40
+// 色域境界（セグメントインデックス）
+const SEG_YELLOW = Math.floor(SEG_COUNT * 0.75)  // 30
+const SEG_RED    = Math.floor(SEG_COUNT * 0.90)  // 36
+
+// ピークホールド後のdecay速度（dB/frame）。~2 dB/s @ 60fps
+const PEAK_DECAY_RATE = 0.033
 
 function dbToFrac(db) {
   return Math.max(0, Math.min(1, (db - DB_MIN) / (DB_MAX - DB_MIN)))
-}
-
-function segColor(frac) {
-  if (frac > 0.9)  return { fill: '#ff3333', glow: 'rgba(255,51,51,0.6)' }
-  if (frac > 0.75) return { fill: '#ffcc00', glow: 'rgba(255,204,0,0.5)' }
-  return             { fill: '#00ff88', glow: 'rgba(0,255,136,0.45)' }
 }
 
 export class BarMeter {
@@ -55,11 +55,13 @@ export class BarMeter {
     for (let i = 0; i < 3; i++) {
       if (this._vals[i] > this._peaks[i]) {
         this._peaks[i] = this._vals[i]
-        this._peakTimers[i] = 60 // ~1s @ 60fps
+        this._peakTimers[i] = 60  // ~1s @ 60fps ホールド
       }
-      if (this._peakTimers[i] > 0) this._peakTimers[i]--
-      else if (this._peakTimers[i] === 0) {
-        this._peaks[i] = Math.max(this._peaks[i] - 0.5, this._vals[i])
+      if (this._peakTimers[i] > 0) {
+        this._peakTimers[i]--
+      } else {
+        // ホールド終了後、約2 dB/s で decay
+        this._peaks[i] = Math.max(this._peaks[i] - PEAK_DECAY_RATE, this._vals[i])
       }
     }
   }
@@ -68,35 +70,43 @@ export class BarMeter {
     const ctx = this.ctx, w = this.w, h = this.h
     ctx.clearRect(0, 0, w, h)
 
-    const colW   = w / 3
-    const labH   = 14
-    const barH   = h - labH - 4
-    const segH   = Math.floor(barH / SEG_COUNT)
-    const gap    = 2
-    const padX   = 4
+    const colW = w / 3
+    const labH = 14
+    const barH = h - labH - 4
+    const segH = Math.floor(barH / SEG_COUNT)
+    const gap  = 2
+    const padX = 4
 
     for (let col = 0; col < 3; col++) {
-      const x0 = col * colW + padX
-      const bw  = colW - padX * 2
+      const x0   = col * colW + padX
+      const bw   = colW - padX * 2
       const frac = dbToFrac(this._vals[col])
       const litSegs = Math.round(frac * SEG_COUNT)
 
-      for (let s = 0; s < SEG_COUNT; s++) {
-        const segFrac = s / SEG_COUNT
+      // 消灯セグメント（shadow なし）
+      ctx.shadowBlur = 0
+      ctx.fillStyle = '#1a1a1a'
+      for (let s = litSegs; s < SEG_COUNT; s++) {
         const y = labH + barH - (s + 1) * segH + gap / 2
-        const sh = segH - gap
+        ctx.fillRect(x0, y, bw, segH - gap)
+      }
 
-        if (s < litSegs) {
-          const c = segColor(segFrac + 1 / SEG_COUNT)
-          ctx.fillStyle = c.fill
-          ctx.shadowBlur = 5
-          ctx.shadowColor = c.glow
-        } else {
-          // 消灯セグメント
-          ctx.fillStyle = '#1a1a1a'
-          ctx.shadowBlur = 0
+      // 点灯セグメント（色グループ単位でshadow設定をまとめる）
+      ctx.shadowBlur = 5
+      const colorGroups = [
+        { lo: 0,          hi: SEG_YELLOW, fill: '#00ff88', glow: 'rgba(0,255,136,0.45)' },
+        { lo: SEG_YELLOW, hi: SEG_RED,    fill: '#ffcc00', glow: 'rgba(255,204,0,0.5)'  },
+        { lo: SEG_RED,    hi: SEG_COUNT,  fill: '#ff3333', glow: 'rgba(255,51,51,0.6)'  },
+      ]
+      for (const g of colorGroups) {
+        const hi = Math.min(g.hi, litSegs)
+        if (g.lo >= hi) continue
+        ctx.fillStyle  = g.fill
+        ctx.shadowColor = g.glow
+        for (let s = g.lo; s < hi; s++) {
+          const y = labH + barH - (s + 1) * segH + gap / 2
+          ctx.fillRect(x0, y, bw, segH - gap)
         }
-        ctx.fillRect(x0, y, bw, sh)
       }
       ctx.shadowBlur = 0
 
@@ -106,10 +116,10 @@ export class BarMeter {
       if (peakSeg > 0 && peakSeg < SEG_COUNT) {
         const py  = labH + barH - peakSeg * segH + gap / 2
         const psh = segH - gap
-        const pc = segColor(peakFrac)
-        ctx.fillStyle = pc.fill
+        const isRed = peakSeg >= SEG_RED, isYellow = peakSeg >= SEG_YELLOW
+        ctx.fillStyle  = isRed ? '#ff3333' : isYellow ? '#ffcc00' : '#00ff88'
         ctx.shadowBlur = 8
-        ctx.shadowColor = pc.glow
+        ctx.shadowColor = isRed ? 'rgba(255,51,51,0.6)' : isYellow ? 'rgba(255,204,0,0.5)' : 'rgba(0,255,136,0.45)'
         ctx.fillRect(x0, py, bw, psh)
         ctx.shadowBlur = 0
       }

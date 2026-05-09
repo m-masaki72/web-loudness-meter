@@ -25,19 +25,28 @@ export class AnalogMeter {
     this._angle   = ANGLE_MIN
     this._vel     = 0
     this._target  = ANGLE_MIN
+    // オフスクリーンキャンバスで静的背景をキャッシュ（毎フレーム再描画を回避）
+    this._bgCanvas = document.createElement('canvas')
+    this._bgCtx   = this._bgCanvas.getContext('2d')
     this._resize()
-    this._drawStatic()
-    new ResizeObserver(() => { this._resize(); this._drawStatic() }).observe(canvas)
+    new ResizeObserver(() => { this._resize() }).observe(canvas)
   }
 
   _resize() {
     const dpr = window.devicePixelRatio || 1
     const rect = this.canvas.getBoundingClientRect()
-    this.canvas.width  = rect.width  * dpr
-    this.canvas.height = rect.height * dpr
+    const pw = rect.width * dpr
+    const ph = rect.height * dpr
+    this.canvas.width  = pw
+    this.canvas.height = ph
     this.ctx.scale(dpr, dpr)
     this.w = rect.width
     this.h = rect.height
+    // オフスクリーンも同サイズに合わせて静的背景を再描画
+    this._bgCanvas.width  = pw
+    this._bgCanvas.height = ph
+    this._bgCtx.scale(dpr, dpr)
+    this._drawStatic()
   }
 
   setValue(db) {
@@ -45,7 +54,8 @@ export class AnalogMeter {
   }
 
   _drawStatic() {
-    const ctx = this.ctx, w = this.w, h = this.h
+    const ctx = this._bgCtx, w = this.w, h = this.h
+    ctx.clearRect(0, 0, w, h)
     const cx = w / 2
     const cy = h * 0.78
     const R  = Math.min(w, h) * 0.72
@@ -121,10 +131,12 @@ export class AnalogMeter {
     this._vel *= DAMPING
     this._angle += this._vel
 
-    // 盤面を再描画（針の残像を消すため）_cx/_cy/_R もここで更新される
-    this._drawStatic()
+    // キャッシュ済み背景を貼り付け（グラデーション・目盛りの再描画不要）
+    const ctx = this.ctx
+    ctx.clearRect(0, 0, this.w, this.h)
+    ctx.drawImage(this._bgCanvas, 0, 0, this.w, this.h)
 
-    const ctx = this.ctx, cx = this._cx, cy = this._cy, R = this._R
+    const cx = this._cx, cy = this._cy, R = this._R
 
     // 針
     const needleLen = R * 0.85

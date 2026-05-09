@@ -27,8 +27,9 @@ export class SpectrumAnalyzer {
   constructor(canvas) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
+    this._sampleRate = 48000
     this._resize()
-    new ResizeObserver(() => { this._resize(); this.draw(null, 48000) }).observe(canvas)
+    new ResizeObserver(() => { this._resize(); this.draw(null) }).observe(canvas)
   }
 
   _resize() {
@@ -42,6 +43,8 @@ export class SpectrumAnalyzer {
   }
 
   draw(freqData, sampleRate) {
+    if (sampleRate != null) this._sampleRate = sampleRate
+    sampleRate = this._sampleRate
     const ctx = this.ctx, w = this.w, h = this.h
     ctx.clearRect(0, 0, w, h)
 

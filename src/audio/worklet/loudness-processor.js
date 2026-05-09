@@ -25,7 +25,8 @@ function biquadLP(fc, fs) {
 }
 function biquadHighShelf(fc, gain_dB, fs) {
   const A=Math.pow(10,gain_dB/40), w0=TWO_PI*fc/fs, cosw=Math.cos(w0), sinw=Math.sin(w0)
-  const alpha=sinw/2*Math.sqrt((A+1/A)*(1/1-1)+2)
+  // S=1 shelf slope → alpha = sinw/2 * sqrt(2), per Audio EQ Cookbook
+  const alpha = sinw / 2 * Math.sqrt(2)
   const a0=(A+1)-(A-1)*cosw+2*Math.sqrt(A)*alpha
   return [
     A*((A+1)+(A-1)*cosw+2*Math.sqrt(A)*alpha)/a0,
@@ -47,6 +48,8 @@ const MOMENTARY_WINDOW  = 0.4   // 400ms
 const SHORTTERM_WINDOW  = 3.0   // 3s
 const GATE_ABSOLUTE_DB  = -70   // 絶対ゲート
 const GATE_RELATIVE_LU  = -10   // 相対ゲート
+// Integrated LUFS用リングバッファ上限（~10分 @ 44.1kHz: 44100/128≈345 blocks/s × 600s）
+const MAX_GATED = 207000
 
 class LoudnessProcessor extends AudioWorkletProcessor {
   constructor() {
@@ -75,13 +78,15 @@ class LoudnessProcessor extends AudioWorkletProcessor {
     // リングバッファ（モーメンタリ・ショートタームのためのMSブロック履歴）
     const mBlocks = Math.ceil(MOMENTARY_WINDOW * fs / BLOCK_SIZE)
     const sBlocks = Math.ceil(SHORTTERM_WINDOW * fs / BLOCK_SIZE)
-    this.msHistory  = new Float64Array(sBlocks)   // 各ブロックのmean-square
+    this.msHistory  = new Float64Array(sBlocks)
     this.msHead     = 0
     this.totalBlocks = sBlocks
     this.mBlocks    = mBlocks
 
-    // Integrated用ブロックリスト
-    this.gatedBlocks = []
+    // Integrated用リングバッファ（メモリ上限付き）
+    this.gatedBuf   = new Float64Array(MAX_GATED)
+    this.gatedHead  = 0
+    this.gatedFull  = false
     this.ungatedMSSum = 0
     this.ungatedCount = 0
 
@@ -95,22 +100,19 @@ class LoudnessProcessor extends AudioWorkletProcessor {
     const samples = input[0]
     const N = samples.length
 
-    let msK = 0, msA = 0, msC = 0
+    // 全フィルタとRawを1ループで計算
+    let msK = 0, msA = 0, msC = 0, msRaw = 0
     for (let i = 0; i < N; i++) {
       const s = samples[i]
       const ks = cascade(s, this.kCoeffs, this.kState)
       const as = cascade(s, this.aCoeffs, this.aState)
       const cs = cascade(s, this.cCoeffs, this.cState)
-      msK += ks * ks
-      msA += as * as
-      msC += cs * cs
+      msK  += ks * ks
+      msA  += as * as
+      msC  += cs * cs
+      msRaw += s * s
     }
-    msK /= N; msA /= N; msC /= N
-
-    // dBFS (raw RMS)
-    let msRaw = 0
-    for (let i = 0; i < N; i++) msRaw += samples[i] * samples[i]
-    msRaw /= N
+    msK /= N; msA /= N; msC /= N; msRaw /= N
 
     // リングバッファに格納
     this.msHistory[this.msHead % this.totalBlocks] = msK
@@ -136,14 +138,18 @@ class LoudnessProcessor extends AudioWorkletProcessor {
     if (msK > absGate) {
       this.ungatedMSSum += msK
       this.ungatedCount++
-      this.gatedBlocks.push(msK)
+      this.gatedBuf[this.gatedHead] = msK
+      this.gatedHead++
+      if (this.gatedHead >= MAX_GATED) { this.gatedHead = 0; this.gatedFull = true }
     }
     let lufsI = -Infinity
     if (this.ungatedCount > 0) {
       const ungatedLUFS = -0.691 + 10 * Math.log10(this.ungatedMSSum / this.ungatedCount)
       const relGate = Math.pow(10, (ungatedLUFS + GATE_RELATIVE_LU + 0.691) / 10)
+      const gatedLen = this.gatedFull ? MAX_GATED : this.gatedHead
       let rSum = 0, rCount = 0
-      for (const ms of this.gatedBlocks) {
+      for (let i = 0; i < gatedLen; i++) {
+        const ms = this.gatedBuf[i]
         if (ms > relGate) { rSum += ms; rCount++ }
       }
       if (rCount > 0) lufsI = -0.691 + 10 * Math.log10(rSum / rCount)

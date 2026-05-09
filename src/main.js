@@ -77,6 +77,7 @@ let running        = false
 let rafId          = null
 let sampleInterval = null  // 履歴サンプリング用
 let splMode        = false  // dBSPL表示モード
+let lastSampleRate = 48000  // spectrum.draw 停止時用
 
 // workletからの最新値
 let latest = { dba: -Infinity, lufsM: -Infinity, lufsS: -Infinity, lufsI: -Infinity }
@@ -130,6 +131,7 @@ function renderLoop() {
 
 // --- 開始 ---
 btnStart.addEventListener('click', async () => {
+  btnStart.disabled = true  // 連打防止（await前に無効化）
   try {
     const result = await initAudio()
     audioCtx      = result.ctx
@@ -137,11 +139,11 @@ btnStart.addEventListener('click', async () => {
     analyserReader = new AnalyserReader(result.analyser)
     workletNode   = result.workletNode
     recorder      = new AudioRecorder(stream)
+    lastSampleRate = result.ctx.sampleRate
 
     workletNode.port.onmessage = (e) => { latest = e.data }
 
     running = true
-    btnStart.disabled = true
     btnRec.disabled   = false
     btnStop.disabled  = false
     document.getElementById('panel').classList.remove('recording')
@@ -169,6 +171,7 @@ btnStart.addEventListener('click', async () => {
       localStorage.setItem('ios-guide-shown', '1')
     }
   } catch (err) {
+    btnStart.disabled = false  // 失敗時は再試行可能に戻す
     alert('マイクのアクセスに失敗しましたわ: ' + err.message)
   }
 })
@@ -198,7 +201,7 @@ btnStop.addEventListener('click', async () => {
   }
 
   stopAudio({ ctx: audioCtx, stream })
-  audioCtx = null; stream = null; recorder = null
+  audioCtx = null; stream = null; recorder = null; analyserReader = null
 
   // UI リセット
   latest = { dba: -Infinity, lufsM: -Infinity, lufsS: -Infinity, lufsI: -Infinity }
@@ -213,12 +216,15 @@ btnStop.addEventListener('click', async () => {
   scope.draw(null)
   barMeter.update(-Infinity, -Infinity, -Infinity)
   barMeter.draw()
-  spectrum.draw(null, 48000)
+  spectrum.draw(null, lastSampleRate)
 })
 
 // --- ピークリセット ---
 btnPeakRst.addEventListener('click', () => {
   barMeter.resetPeaks()
+  // 押下フィードバック（一瞬ハイライト）
+  btnPeakRst.classList.add('active')
+  setTimeout(() => btnPeakRst.classList.remove('active'), 150)
 })
 
 // --- dBSPL トグル ---
@@ -254,16 +260,17 @@ btnHistClear.addEventListener('click', async () => {
 
 // --- キャリブレーション ---
 btnCal.addEventListener('click', () => {
-  calCurrent.textContent = analyserReader
-    ? analyserReader.getDBFS().toFixed(1)
-    : '---'
+  if (!running) return  // 音声未起動時は無効（U1: 誤った offset 保存を防止）
+  calCurrent.textContent = analyserReader.getDBFS().toFixed(1)
   calPanel.classList.toggle('hidden')
 })
 
 calSave.addEventListener('click', () => {
-  const measured = analyserReader?.getDBFS() ?? 0
+  if (!running || !analyserReader) { calPanel.classList.add('hidden'); return }
+  const measured = analyserReader.getDBFS()
   const actual   = parseFloat(calInput.value)
-  if (!isNaN(actual)) setOffset(measured, actual)
+  // S2: isFinite チェックで Infinity/-Infinity 値を弾く
+  if (isFinite(actual) && actual >= 0 && actual <= 140) setOffset(measured, actual)
   calPanel.classList.add('hidden')
 })
 
@@ -284,5 +291,5 @@ scope.draw(null)
 barMeter.update(-Infinity, -Infinity, -Infinity)
 barMeter.draw()
 analog.draw()
-spectrum.draw(null, 48000)
+spectrum.draw(null)
 histPanel.classList.add('hidden')
