@@ -19,4 +19,10 @@ export class AnalyserReader {
   getDBFS() {
     return 20 * Math.log10(Math.max(this.getRMS(), 1e-10))
   }
+
+  getFrequencies() {
+    if (!this._freqBuf) this._freqBuf = new Float32Array(this.node.frequencyBinCount)
+    this.node.getFloatFrequencyData(this._freqBuf)
+    return this._freqBuf
+  }
 }

@@ -13,11 +13,11 @@
 }
 
 html, body {
-  width: 100%; height: 100%;
+  width: 100%; min-height: 100%;
   background: #0a0a0a;
   font-family: 'Courier New', monospace;
   color: var(--text);
-  overflow: hidden;
+  overflow-y: auto;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -26,7 +26,7 @@ html, body {
   justify-content: center;
   align-items: flex-start;
   min-height: 100dvh;
-  padding: 8px;
+  padding: 8px 8px 24px;
 }
 
 #panel {
@@ -103,24 +103,24 @@ canvas { display: block; width: 100%; }
 /* デジタル数値表示 */
 #digital-display {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
 }
 .digit-group {
   background: #0a0a0a;
   border: 1px solid #2a2a2a;
   border-radius: 4px;
-  padding: 6px 4px;
+  padding: 5px 2px;
   text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.5) inset;
 }
 .digit-value {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: bold;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: var(--green);
   text-shadow: 0 0 10px rgba(0,255,136,0.8);
-  min-height: 22px;
+  min-height: 20px;
 }
 .digit-value.warn  { color: var(--yellow); text-shadow: 0 0 10px rgba(255,204,0,0.8); }
 .digit-value.clip  { color: var(--red);    text-shadow: 0 0 10px rgba(255,51,51,0.8); }
@@ -162,6 +162,45 @@ canvas { display: block; width: 100%; }
 .btn-rec   { border-color: #5a2a2a; color: var(--red);   text-shadow: 0 0 6px rgba(255,51,51,0.4); }
 .btn-stop  { border-color: #555; }
 .btn-cal   { border-color: #3a3a5a; color: #88aaff; font-size: 10px; }
+
+/* コントロール2行目 */
+#controls-2 {
+  display: flex;
+  gap: 6px;
+}
+.btn-peak { border-color: #3a3a2a; color: var(--yellow); font-size: 10px; }
+.btn-spl  { border-color: #2a3a3a; color: #88ccff; font-size: 10px; }
+.btn-hist { border-color: #2a2a4a; color: #cc88ff; font-size: 10px; }
+.btn-spl.active { border-color: #00aaff; color: #00ccff; text-shadow: 0 0 6px rgba(0,200,255,0.6); }
+
+/* スペクトラムセクション */
+#spectrum-section canvas { height: 100px; }
+
+/* 履歴パネル */
+#history-panel {
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+#history-panel canvas { display: block; width: 100%; height: 120px; }
+#history-controls {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 6px;
+  border-top: 1px solid #1a1a1a;
+}
+#history-controls button {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #1a1a1a;
+  color: #888;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
 
 /* キャリブレーションパネル */
 #calibration-panel {
@@ -218,6 +257,93 @@ canvas { display: block; width: 100%; }
 }
 
 .hidden { display: none !important; }
+
+/* ヘルプオーバーレイ */
+#help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px 8px;
+  overflow-y: auto;
+  backdrop-filter: blur(4px);
+}
+#help-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #141414;
+  border: 1px solid #333;
+  border-radius: 10px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+#help-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #1e1e1e;
+  border-bottom: 1px solid #2a2a2a;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: #aaa;
+}
+#btn-help-close {
+  background: none;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 8px;
+  font-family: 'Courier New', monospace;
+}
+#btn-help-close:hover { color: #ccc; border-color: #666; }
+#help-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.help-section h2 {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: #555;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #1e1e1e;
+}
+.help-item {
+  margin-bottom: 12px;
+}
+.help-label {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(0, 255, 136, 0.5);
+  margin-bottom: 4px;
+}
+.help-desc {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #888;
+}
+.help-desc strong { color: #bbb; }
+.help-warn { color: var(--yellow); }
+.help-clip { color: var(--red); }
+.btn-help {
+  border-color: #3a3a3a;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: bold;
+  flex: 0 0 auto;
+  padding: 10px 12px;
+}
 
 /* REC中の点滅 */
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }

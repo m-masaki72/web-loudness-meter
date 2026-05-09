@@ -42,6 +42,11 @@ export class BarMeter {
     this.h = rect.height
   }
 
+  resetPeaks() {
+    this._peaks = [DB_MIN, DB_MIN, DB_MIN]
+    this._peakTimers = [0, 0, 0]
+  }
+
   update(dbfs, dba, lufsI) {
     this._vals[0] = isFinite(dbfs)  ? dbfs  : DB_MIN
     this._vals[1] = isFinite(dba)   ? dba   : DB_MIN

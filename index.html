@@ -39,19 +39,29 @@
         <canvas id="analog-meter"></canvas>
       </section>
 
+      <!-- スペクトラムアナライザー -->
+      <section class="meter-section" id="spectrum-section">
+        <canvas id="spectrum"></canvas>
+        <div class="section-label">SPECTRUM</div>
+      </section>
+
       <!-- デジタル数値表示 -->
       <div id="digital-display">
         <div class="digit-group">
           <div class="digit-value" id="val-dbfs">---.-</div>
-          <div class="digit-label">dBFS</div>
+          <div class="digit-label" id="lbl-dbfs">dBFS</div>
         </div>
         <div class="digit-group">
           <div class="digit-value" id="val-dba">---.-</div>
-          <div class="digit-label">dBA</div>
+          <div class="digit-label" id="lbl-dba">dBA</div>
         </div>
         <div class="digit-group">
           <div class="digit-value" id="val-lufs-m">---.-</div>
           <div class="digit-label">LUFS-M</div>
+        </div>
+        <div class="digit-group">
+          <div class="digit-value" id="val-lufs-s">---.-</div>
+          <div class="digit-label">LUFS-S</div>
         </div>
         <div class="digit-group">
           <div class="digit-value" id="val-lufs-i">---.-</div>
@@ -66,6 +76,20 @@
         <button id="btn-stop" class="ctl-btn btn-stop" disabled>■ STOP</button>
         <button id="btn-calibrate" class="ctl-btn btn-cal">CAL</button>
       </div>
+      <div id="controls-2">
+        <button id="btn-peak-reset" class="ctl-btn btn-peak">PEAK RST</button>
+        <button id="btn-spl-toggle" class="ctl-btn btn-spl">dBSPL OFF</button>
+        <button id="btn-history-toggle" class="ctl-btn btn-hist">HIST</button>
+        <button id="btn-help" class="ctl-btn btn-help">?</button>
+      </div>
+
+      <!-- 履歴グラフパネル（初期非表示） -->
+      <div id="history-panel" class="hidden">
+        <canvas id="history-graph"></canvas>
+        <div id="history-controls">
+          <button id="btn-history-clear">CLEAR</button>
+        </div>
+      </div>
 
       <!-- キャリブレーションパネル（初期非表示） -->
       <div id="calibration-panel" class="hidden">
@@ -79,6 +103,187 @@
       <div id="ios-guide" class="hidden">
         <p>📱 iOSでより正確な測定をするには、コントロールセンターで<br>マイクモードを<strong>「ワイドスペクトラム」</strong>に設定してください。</p>
         <button id="ios-guide-close">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ヘルプオーバーレイ -->
+  <div id="help-overlay" class="hidden">
+    <div id="help-modal">
+      <div id="help-header">
+        <span>MANUAL</span>
+        <button id="btn-help-close">✕</button>
+      </div>
+      <div id="help-body">
+
+        <section class="help-section">
+          <h2>計測値の見方</h2>
+
+          <div class="help-item">
+            <div class="help-label">dBFS</div>
+            <div class="help-desc">
+              デジタルフルスケール基準の音量レベル。0 dBFS が最大値で、それ以下の負の値で表されます。
+              <span class="help-warn">−12〜−3</span>（黄色）は大きめ、<span class="help-clip">−3 以上</span>（赤）はクリップ寸前です。
+              通常の会話・環境音は −40〜−20 dBFS 付近。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">dBSPL</div>
+            <div class="help-desc">
+              CAL ボタンで基準音源（騒音計など）とキャリブレーションした後、<strong>dBSPL ON</strong> に切り替えると表示されます。
+              実際の音圧レベル（0 dB = 20 μPa 基準）に対応する値です。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">dBA</div>
+            <div class="help-desc">
+              人間の聴覚特性（A 特性）に合わせて周波数補正した音量。低音・高音を耳に近い形で重み付けしており、
+              騒音規制や職場環境の評価でよく使われます。dBFS より若干低めの値になることが多いです。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">LUFS-M（Momentary）</div>
+            <div class="help-desc">
+              直近 <strong>400 ミリ秒</strong>のラウドネス。瞬間的な音量の大小を素早く反映します。
+              音楽・音声のリアルタイムモニタリングに最適。EBU R128 / ITU-R BS.1770-4 準拠。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">LUFS-S（Short-term）</div>
+            <div class="help-desc">
+              直近 <strong>3 秒間</strong>のラウドネス。LUFS-M より変動が少なく、
+              シーン単位の音量感をつかむのに向いています。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">LUFS-I（Integrated）</div>
+            <div class="help-desc">
+              計測開始からの<strong>累積ラウドネス</strong>。放送・配信の規格値として使われます。
+              ターゲット：放送 <strong>−23 LUFS</strong>（EBU R128）、ストリーミング <strong>−14 LUFS</strong>（Spotify/YouTube 目安）。
+              ゲーティング処理（無音区間を除外）が入るため、静寂が長くても値が下がりにくいです。
+            </div>
+          </div>
+        </section>
+
+        <section class="help-section">
+          <h2>グラフ・メーターの見方</h2>
+
+          <div class="help-item">
+            <div class="help-label">WAVEFORM（波形）</div>
+            <div class="help-desc">
+              マイク入力の時間波形。振れ幅が大きいほど音が大きいです。
+              左右対称に広がらず偏っている場合は DC オフセットが乗っている可能性があります。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">LED バーグラフ</div>
+            <div class="help-desc">
+              左から dBFS / dBA / LUFS-I の 3 チャンネル。上端に光る細いセグメントが<strong>ピークホールド</strong>で、
+              直近のピーク値を約 1 秒保持した後ゆっくり下降します。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">SPECTRUM（スペクトラム）</div>
+            <div class="help-desc">
+              周波数成分をリアルタイム表示。横軸は対数スケール（左：低音域 20Hz、右：高音域 20kHz）。
+              縦軸が高いほどその周波数のエネルギーが大きいです。
+              空調・換気の低音ノイズや、特定の機器ノイズの周波数特定に役立ちます。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">アナログ針メーター</div>
+            <div class="help-desc">
+              dBFS を VU メーター風に表示。バネ物理シミュレーションで慣性・減衰をリアルに再現しています。
+              瞬間値よりも「音の雰囲気」を直感的につかむのに適しています。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">HIST（履歴グラフ）</div>
+            <div class="help-desc">
+              直近 5 分間の dBFS（緑）/ dBA（黄）/ LUFS-I（紫）を折れ線で表示。
+              IndexedDB に保存されるため、ページを閉じても残ります。CLEAR で全削除できます。
+            </div>
+          </div>
+        </section>
+
+        <section class="help-section">
+          <h2>ボタンの使い方</h2>
+
+          <div class="help-item">
+            <div class="help-label">▶ START</div>
+            <div class="help-desc">マイクへのアクセスを要求して計測を開始します。初回はブラウザの許可ダイアログが表示されます。</div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">⏺ REC</div>
+            <div class="help-desc">
+              音声録音を開始します（START の後に押せます）。録音中はボタンが点滅します。
+              STOP を押すと録音ファイルが自動的に保存されます（iOS は共有シートが開きます）。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">■ STOP</div>
+            <div class="help-desc">計測と録音を終了します。録音中だった場合はファイルの保存処理が走ります。</div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">CAL</div>
+            <div class="help-desc">
+              dBSPL キャリブレーションパネルを開きます。
+              騒音計などの基準値を入力して「保存」するとオフセットが記録されます。
+              その後 <strong>dBSPL ON</strong> にすると補正済みの値が表示されます。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">PEAK RST</div>
+            <div class="help-desc">LED バーグラフのピークホールドをリセットします。新しい最大値を測り直したいときに使います。</div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">dBSPL OFF / ON</div>
+            <div class="help-desc">
+              OFF のとき：dBFS / dBA（生の測定値）を表示。<br>
+              ON のとき：CAL で設定したオフセットを加算した dBSPL / dBSPL(A) を表示。
+              キャリブレーション前は ON にしても値は変わりません。
+            </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">HIST</div>
+            <div class="help-desc">計測履歴グラフを表示／非表示します。直近 5 分間のトレンドを折れ線グラフで確認できます。</div>
+          </div>
+        </section>
+
+        <section class="help-section">
+          <h2>よくある質問</h2>
+
+          <div class="help-item">
+            <div class="help-label">値が表示されない / ---.- のまま</div>
+            <div class="help-desc">START ボタンを押してからマイクの許可を与えてください。HTTPS または localhost 環境が必要です。</div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">iOS で録音ファイルが保存できない</div>
+            <div class="help-desc">iOS Safari では共有シートが開きます。「ファイルに保存」を選んでください。PWA モードでは共有シートのみ対応です。</div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">画面が暗くなる</div>
+            <div class="help-desc">Screen Wake Lock が取得できていない可能性があります。タイトルバー右の ⊙ インジケーターが緑なら有効です。ブラウザの省電力設定を確認してください。</div>
+          </div>
+        </section>
+
       </div>
     </div>
   </div>
