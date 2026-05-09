@@ -56,7 +56,7 @@ let running        = false
 let rafId          = null
 
 // workletからの最新値
-let latest = { dbfs: -Infinity, dba: -Infinity, dbc: -Infinity, lufsM: -Infinity, lufsS: -Infinity, lufsI: -Infinity }
+let latest = { dba: -Infinity, lufsM: -Infinity, lufsI: -Infinity }
 
 // --- フォーマット ---
 function fmt(v) {
@@ -158,7 +158,7 @@ btnStop.addEventListener('click', async () => {
   audioCtx = null; stream = null; recorder = null
 
   // UI リセット
-  latest = { dbfs: -Infinity, dba: -Infinity, dbc: -Infinity, lufsM: -Infinity, lufsS: -Infinity, lufsI: -Infinity }
+  latest = { dba: -Infinity, lufsM: -Infinity, lufsI: -Infinity }
   valDbfs.textContent = valDba.textContent = valLufsM.textContent = valLufsI.textContent = '---.-'
   ;[valDbfs, valDba, valLufsM, valLufsI].forEach(el => { el.classList.remove('warn','clip') })
 
