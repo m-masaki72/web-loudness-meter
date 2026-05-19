@@ -2,7 +2,7 @@ import { initAudio, stopAudio } from './audio/mic-capture.js'
 import { AnalyserReader }        from './audio/analyser.js'
 import { AudioRecorder, exportBlob } from './audio/recorder.js'
 import { getOffset, setOffset, applyOffset } from './audio/calibration.js'
-import { openDB, saveSample, loadRecent, clearHistory } from './audio/history.js'
+import { openDB, saveSample, loadRecent, loadAll, clearHistory } from './audio/history.js'
 import { Oscilloscope }          from './ui/oscilloscope.js'
 import { BarMeter }              from './ui/bar-meter.js'
 import { AnalogMeter }           from './ui/analog-meter.js'
@@ -10,9 +10,18 @@ import { WakeLockManager }       from './ui/wake-lock.js'
 import { SpectrumAnalyzer }      from './ui/spectrum.js'
 import { HistoryGraph }          from './ui/history-graph.js'
 
-// --- Service Worker 登録（HTTPSまたはlocalhostのみ） ---
+// --- Service Worker 登録 + 更新通知 ---
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('./sw.js').catch(() => {})
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          swUpdateBanner.classList.remove('hidden')
+        }
+      })
+    })
+  }).catch(() => {})
 }
 
 // --- DOM ---
@@ -27,6 +36,14 @@ const btnHistClear  = document.getElementById('btn-history-clear')
 const btnHelp       = document.getElementById('btn-help')
 const btnHelpClose  = document.getElementById('btn-help-close')
 const helpOverlay   = document.getElementById('help-overlay')
+const swUpdateBanner  = document.getElementById('sw-update-banner')
+const btnSwUpdate     = document.getElementById('btn-sw-update')
+const btnSwDismiss    = document.getElementById('btn-sw-dismiss')
+const installBanner   = document.getElementById('install-banner')
+const btnInstall      = document.getElementById('btn-install')
+const btnInstallDismiss = document.getElementById('btn-install-dismiss')
+const panel           = panel
+const btnModeToggle   = document.getElementById('btn-mode-toggle')
 const calPanel    = document.getElementById('calibration-panel')
 const histPanel   = document.getElementById('history-panel')
 const calCurrent  = document.getElementById('cal-current')
@@ -44,6 +61,9 @@ const valLufsS = document.getElementById('val-lufs-s')
 const valLufsI = document.getElementById('val-lufs-i')
 const lblDbfs  = document.getElementById('lbl-dbfs')
 const lblDba   = document.getElementById('lbl-dba')
+const noiseNeedle = document.getElementById('noise-needle')
+const noiseLabel  = document.getElementById('noise-label')
+const noiseNote   = document.getElementById('noise-note')
 
 // --- Canvas UI ---
 const scopeCanvas    = document.getElementById('oscilloscope')
@@ -67,6 +87,37 @@ const histGraph = new HistoryGraph(histCanvas)
 // IndexedDB を事前に開いておく
 openDB().catch(() => {})
 
+// --- 騒音レベルインジケーター ---
+const NOISE_LEVELS = [
+  { max: 35,  label: '🌙 深夜・無響室',   },
+  { max: 45,  label: '📚 静かな図書館',   },
+  { max: 55,  label: '🏠 静かな住宅街',   },
+  { max: 65,  label: '💬 普通の会話',     },
+  { max: 75,  label: '🍽️ にぎやかな飲食店', },
+  { max: 85,  label: '🚗 幹線道路沿い',   },
+  { max: 95,  label: '🏭 工事現場',       },
+  { max: 110, label: '✈️ 飛行機エンジン近く', },
+  { max: Infinity, label: '🚨 聴力障害の危険', },
+]
+const NOISE_BAR_MIN = 30
+const NOISE_BAR_MAX = 110
+
+function updateNoiseIndicator(db, isCalibrated) {
+  if (!isFinite(db)) {
+    noiseNeedle.style.left = '0%'
+    noiseLabel.textContent = '---'
+    noiseNote.textContent  = ''
+    return
+  }
+  const pct = Math.max(0, Math.min(100,
+    (db - NOISE_BAR_MIN) / (NOISE_BAR_MAX - NOISE_BAR_MIN) * 100
+  ))
+  noiseNeedle.style.left = pct + '%'
+  const level = NOISE_LEVELS.find(l => db < l.max)
+  noiseLabel.textContent = level?.label ?? '---'
+  noiseNote.textContent  = isCalibrated ? '' : '※ 未キャリブレーション（参考値）'
+}
+
 // --- 状態 ---
 let audioCtx = null
 let analyserReader = null
@@ -78,9 +129,26 @@ let rafId          = null
 let sampleInterval = null  // 履歴サンプリング用
 let splMode        = false  // dBSPL表示モード
 let lastSampleRate = 48000  // spectrum.draw 停止時用
+let uiMode = localStorage.getItem('ui-mode') || 'simple'
 
 // workletからの最新値
 let latest = { dba: -Infinity, lufsM: -Infinity, lufsS: -Infinity, lufsI: -Infinity }
+
+// --- UI モード ---
+function applyMode(mode) {
+  uiMode = mode
+  localStorage.setItem('ui-mode', mode)
+  if (mode === 'simple') {
+    panel.classList.add('simple-mode')
+    btnModeToggle.textContent = 'EXPERT'
+  } else {
+    panel.classList.remove('simple-mode')
+    btnModeToggle.textContent = 'SIMPLE'
+  }
+}
+btnModeToggle.addEventListener('click', () => {
+  applyMode(uiMode === 'simple' ? 'expert' : 'simple')
+})
 
 // --- フォーマット ---
 function fmt(v) {
@@ -104,15 +172,15 @@ function renderLoop() {
   scope.draw(waveform)
 
   const rawDbfs = analyserReader.getDBFS()
-  barMeter.update(rawDbfs, latest.dba, latest.lufsI)
-  barMeter.draw()
 
-  analog.setValue(rawDbfs)
-  analog.draw()
-
-  // スペクトラム
-  const freqData = analyserReader.getFrequencies()
-  spectrum.draw(freqData, audioCtx.sampleRate)
+  if (uiMode === 'expert') {
+    barMeter.update(rawDbfs, latest.dba, latest.lufsI)
+    barMeter.draw()
+    analog.setValue(rawDbfs)
+    analog.draw()
+    const freqData = analyserReader.getFrequencies()
+    spectrum.draw(freqData, audioCtx.sampleRate)
+  }
 
   // デジタル表示（splMode時はオフセット適用）
   const dispDbfs = splMode ? applyOffset(rawDbfs) : rawDbfs
@@ -127,6 +195,9 @@ function renderLoop() {
   applyWarnClass(valDbfs,  rawDbfs)
   applyWarnClass(valDba,   latest.dba)
   applyWarnClass(valLufsI, latest.lufsI)
+
+  // 騒音レベルインジケーター（splMode なら補正済み値、未補正なら dBFS をそのまま）
+  updateNoiseIndicator(dispDbfs, splMode)
 }
 
 // --- 開始 ---
@@ -146,7 +217,7 @@ btnStart.addEventListener('click', async () => {
     running = true
     btnRec.disabled   = false
     btnStop.disabled  = false
-    document.getElementById('panel').classList.remove('recording')
+    panel.classList.remove('recording')
 
     await wakeLock.request()
 
@@ -180,7 +251,7 @@ btnStart.addEventListener('click', async () => {
 btnRec.addEventListener('click', () => {
   if (!recorder) return
   recorder.start()
-  document.getElementById('panel').classList.add('recording')
+  panel.classList.add('recording')
   btnRec.disabled = true
 })
 
@@ -195,15 +266,22 @@ btnStop.addEventListener('click', async () => {
 
   if (recorder?.isRecording) {
     const blob = await recorder.stop()
-    const ts   = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const d    = new Date()
+    const ts   = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`
     const ext  = blob.type.includes('mp4') ? 'mp4' : 'webm'
-    await exportBlob(blob, `recording-${ts}.${ext}`)
+    try {
+      await exportBlob(blob, `loudness-${ts}.${ext}`)
+    } catch (err) {
+      console.warn('録音ファイルの保存に失敗しました:', err)
+      alert('録音ファイルの保存に失敗しました。')
+    }
   }
 
   stopAudio({ ctx: audioCtx, stream })
   audioCtx = null; stream = null; recorder = null; analyserReader = null
 
   // UI リセット
+  updateNoiseIndicator(-Infinity, false)
   latest = { dba: -Infinity, lufsM: -Infinity, lufsS: -Infinity, lufsI: -Infinity }
   const resetEls = [valDbfs, valDba, valLufsM, valLufsS, valLufsI]
   resetEls.forEach(el => { el.textContent = '---.-'; el.classList.remove('warn', 'clip') })
@@ -211,12 +289,15 @@ btnStop.addEventListener('click', async () => {
   btnStart.disabled = false
   btnRec.disabled   = true
   btnStop.disabled  = true
-  document.getElementById('panel').classList.remove('recording')
+  panel.classList.remove('recording')
 
   scope.draw(null)
-  barMeter.update(-Infinity, -Infinity, -Infinity)
-  barMeter.draw()
-  spectrum.draw(null, lastSampleRate)
+  if (uiMode === 'expert') {
+    barMeter.update(-Infinity, -Infinity, -Infinity)
+    barMeter.draw()
+    analog.draw()
+    spectrum.draw(null, lastSampleRate)
+  }
 })
 
 // --- ピークリセット ---
@@ -244,23 +325,47 @@ btnSplToggle.addEventListener('click', () => {
 })
 
 // --- 履歴トグル ---
+let histRangeMin = 5  // 分 (0 = ALL)
+
+async function refreshHistGraph() {
+  const samples = histRangeMin === 0
+    ? await loadAll()
+    : await loadRecent(histRangeMin * 60 * 1000)
+  histGraph.update(samples)
+}
+
 btnHistToggle.addEventListener('click', async () => {
   const isHidden = histPanel.classList.toggle('hidden')
-  if (!isHidden) {
-    const samples = await loadRecent()
-    histGraph.update(samples)
-  }
+  if (!isHidden) refreshHistGraph()
+})
+
+// --- 履歴時間範囲ボタン ---
+document.querySelectorAll('.btn-range').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    document.querySelectorAll('.btn-range').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    histRangeMin = Number(btn.dataset.range)
+    refreshHistGraph()
+  })
 })
 
 // --- 履歴クリア ---
 btnHistClear.addEventListener('click', async () => {
-  await clearHistory()
-  histGraph.update([])
+  try {
+    await clearHistory()
+    histGraph.update([])
+  } catch (err) {
+    console.warn('履歴のクリアに失敗しました:', err)
+  }
 })
 
 // --- キャリブレーション ---
 btnCal.addEventListener('click', () => {
-  if (!running) return  // 音声未起動時は無効（U1: 誤った offset 保存を防止）
+  if (!running || !analyserReader) {
+    btnCal.classList.add('flash-disabled')
+    setTimeout(() => btnCal.classList.remove('flash-disabled'), 300)
+    return
+  }
   calCurrent.textContent = analyserReader.getDBFS().toFixed(1)
   calPanel.classList.toggle('hidden')
 })
@@ -286,10 +391,37 @@ helpOverlay.addEventListener('click', (e) => {
 // --- iOS案内 ---
 iosClose.addEventListener('click', () => iosGuide.classList.add('hidden'))
 
+// --- SW 更新バナー ---
+btnSwUpdate.addEventListener('click', async () => {
+  swUpdateBanner.classList.add('hidden')
+  const reg = await navigator.serviceWorker.getRegistration()
+  if (reg?.waiting) reg.waiting.postMessage('SKIP_WAITING')
+  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload())
+})
+btnSwDismiss.addEventListener('click', () => swUpdateBanner.classList.add('hidden'))
+
+// --- インストールバナー ---
+let _deferredInstallPrompt = null
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault()
+  _deferredInstallPrompt = e
+  installBanner.classList.remove('hidden')
+})
+btnInstall.addEventListener('click', async () => {
+  if (!_deferredInstallPrompt) return
+  installBanner.classList.add('hidden')
+  _deferredInstallPrompt.prompt()
+  await _deferredInstallPrompt.userChoice
+  _deferredInstallPrompt = null
+})
+btnInstallDismiss.addEventListener('click', () => installBanner.classList.add('hidden'))
+window.addEventListener('appinstalled', () => installBanner.classList.add('hidden'))
+
 // --- 初期描画（アイドル状態） ---
 scope.draw(null)
 barMeter.update(-Infinity, -Infinity, -Infinity)
 barMeter.draw()
 analog.draw()
-spectrum.draw(null)
+spectrum.draw(null, lastSampleRate)
 histPanel.classList.add('hidden')
+applyMode(uiMode)

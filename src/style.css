@@ -19,6 +19,7 @@ html, body {
   color: var(--text);
   overflow-y: auto;
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
 }
 
 #app {
@@ -26,7 +27,7 @@ html, body {
   justify-content: center;
   align-items: flex-start;
   min-height: 100dvh;
-  padding: 8px 8px 24px;
+  padding: calc(8px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
 }
 
 #panel {
@@ -65,6 +66,25 @@ html, body {
   gap: 8px;
   padding: 4px 0 6px;
   border-bottom: 1px solid #333;
+  position: relative;
+}
+#btn-mode-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  flex: none;
+  padding: 2px 8px;
+  min-height: 28px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  border-color: #3a3a3a;
+  color: #666;
+}
+#panel.simple-mode #btn-mode-toggle {
+  border-color: #00ff88;
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(0,255,136,0.4);
 }
 .title-text {
   font-size: 13px;
@@ -131,6 +151,72 @@ canvas { display: block; width: 100%; }
   margin-top: 2px;
 }
 
+/* 騒音レベルインジケーター */
+#noise-level {
+  padding: 6px 4px 4px;
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+}
+#noise-bar-wrap {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  overflow: visible;
+  margin: 0 2px;
+}
+#noise-bar {
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background: linear-gradient(to right,
+    #1a6b3a 0%,        /* ~30dB 静寂 */
+    #00ff88 18%,       /* ~40dB 静か */
+    #88ff00 36%,       /* ~55dB 会話 */
+    #ffcc00 55%,       /* ~70dB 騒音 */
+    #ff8800 73%,       /* ~85dB 騒がしい */
+    #ff3333 100%       /* ~100dB 危険 */
+  );
+  opacity: 0.7;
+}
+#noise-needle {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 16px;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(255,255,255,0.8);
+  transform: translateX(-50%);
+  left: 0%;
+  transition: left 0.3s ease;
+}
+#noise-zones {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 2px 0;
+  font-size: 8px;
+  color: #444;
+  letter-spacing: 0.5px;
+}
+#noise-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #aaa;
+  margin-top: 4px;
+  min-height: 16px;
+}
+#noise-note {
+  text-align: center;
+  font-size: 8px;
+  color: #333;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+  min-height: 10px;
+}
+
 /* コントロール */
 #controls {
   display: flex;
@@ -139,6 +225,7 @@ canvas { display: block; width: 100%; }
 .ctl-btn {
   flex: 1;
   padding: 10px 4px;
+  min-height: 44px;
   border: 1px solid #444;
   border-radius: 6px;
   font-family: 'Courier New', monospace;
@@ -186,12 +273,14 @@ canvas { display: block; width: 100%; }
 #history-panel canvas { display: block; width: 100%; height: 120px; }
 #history-controls {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: 4px 6px;
   border-top: 1px solid #1a1a1a;
 }
 #history-controls button {
   padding: 4px 10px;
+  min-height: 44px;
   border-radius: 4px;
   border: 1px solid #444;
   background: #1a1a1a;
@@ -200,6 +289,27 @@ canvas { display: block; width: 100%; }
   font-family: 'Courier New', monospace;
   font-size: 10px;
   letter-spacing: 1px;
+}
+#history-range {
+  display: flex;
+  gap: 4px;
+}
+.btn-range {
+  padding: 2px 8px;
+  min-height: 44px;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #111;
+  color: #666;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.btn-range.active {
+  border-color: #cc88ff;
+  color: #cc88ff;
+  text-shadow: 0 0 6px rgba(204, 136, 255, 0.5);
 }
 
 /* キャリブレーションパネル */
@@ -220,11 +330,13 @@ canvas { display: block; width: 100%; }
   color: var(--green);
   font-family: 'Courier New', monospace;
   padding: 4px 6px;
+  min-height: 44px;
   width: 70px;
   margin-left: 6px;
 }
 #calibration-panel button {
   padding: 6px 14px;
+  min-height: 44px;
   border-radius: 4px;
   border: 1px solid #444;
   background: #222;
@@ -248,6 +360,7 @@ canvas { display: block; width: 100%; }
 #ios-guide button {
   margin-top: 8px;
   padding: 6px 20px;
+  min-height: 44px;
   background: #1e40af;
   border: none;
   border-radius: 4px;
@@ -300,6 +413,8 @@ canvas { display: block; width: 100%; }
   font-size: 14px;
   cursor: pointer;
   padding: 2px 8px;
+  min-height: 44px;
+  min-width: 44px;
   font-family: 'Courier New', monospace;
 }
 #btn-help-close:hover { color: #ccc; border-color: #666; }
@@ -345,6 +460,88 @@ canvas { display: block; width: 100%; }
   padding: 10px 12px;
 }
 
+/* SW 更新バナー / インストールバナー */
+#sw-update-banner,
+#install-banner {
+  position: fixed;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  background: #1e2a1e;
+  border: 1px solid #2a5a2a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #aaa;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+  z-index: 200;
+}
+#install-banner {
+  background: #1a1e2a;
+  border-color: #2a3a5a;
+}
+#sw-update-banner span,
+#install-banner span {
+  flex: 1;
+  letter-spacing: 0.5px;
+}
+#btn-sw-update,
+#btn-install {
+  padding: 4px 10px;
+  min-height: 36px;
+  border-radius: 4px;
+  border: 1px solid #2a7a2a;
+  background: #143a14;
+  color: var(--green);
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+#btn-install {
+  border-color: #2a3a7a;
+  background: #141428;
+  color: #88aaff;
+}
+#btn-sw-dismiss,
+#btn-install-dismiss {
+  padding: 4px 8px;
+  min-height: 36px;
+  min-width: 36px;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
 /* REC中の点滅 */
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 .recording #btn-rec { animation: blink 1s ease-in-out infinite; }
+
+/* ボタン無効時のフラッシュフィードバック */
+@keyframes flash-disabled { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.flash-disabled { animation: flash-disabled 0.3s ease-in-out; }
+
+/* ---- SIMPLE モード ---- */
+.simple-mode #bar-section,
+.simple-mode #analog-section,
+.simple-mode #spectrum-section,
+.simple-mode #controls-2,
+.simple-mode #history-panel,
+.simple-mode #calibration-panel,
+.simple-mode .digit-expert,
+.simple-mode .btn-expert { display: none !important; }
+
+/* dBFS 値を大きく1列表示 */
+.simple-mode #digital-display { grid-template-columns: 1fr; }
+.simple-mode #digital-display .digit-value { font-size: 28px; min-height: 36px; }
+.simple-mode #digital-display .digit-label { font-size: 10px; letter-spacing: 2px; }

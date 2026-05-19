@@ -23,6 +23,7 @@
       <div id="title-bar">
         <span class="title-text">LOUDNESS METER</span>
         <span id="wake-lock-indicator" class="indicator off" title="Screen Wake Lock">⊙</span>
+        <button id="btn-mode-toggle" class="ctl-btn btn-mode">EXPERT</button>
       </div>
 
       <!-- オシロスコープ -->
@@ -53,30 +54,47 @@
           <div class="digit-value" id="val-dbfs">---.-</div>
           <div class="digit-label" id="lbl-dbfs">dBFS</div>
         </div>
-        <div class="digit-group">
+        <div class="digit-group digit-expert">
           <div class="digit-value" id="val-dba">---.-</div>
           <div class="digit-label" id="lbl-dba">dBA</div>
         </div>
-        <div class="digit-group">
+        <div class="digit-group digit-expert">
           <div class="digit-value" id="val-lufs-m">---.-</div>
           <div class="digit-label">LUFS-M</div>
         </div>
-        <div class="digit-group">
+        <div class="digit-group digit-expert">
           <div class="digit-value" id="val-lufs-s">---.-</div>
           <div class="digit-label">LUFS-S</div>
         </div>
-        <div class="digit-group">
+        <div class="digit-group digit-expert">
           <div class="digit-value" id="val-lufs-i">---.-</div>
           <div class="digit-label">LUFS-I</div>
         </div>
       </div>
 
+      <!-- 騒音レベルインジケーター -->
+      <div id="noise-level">
+        <div id="noise-bar-wrap">
+          <div id="noise-bar"></div>
+          <div id="noise-needle"></div>
+        </div>
+        <div id="noise-zones">
+          <span>静寂</span>
+          <span>静か</span>
+          <span>会話</span>
+          <span>騒音</span>
+          <span>危険</span>
+        </div>
+        <div id="noise-label">---</div>
+        <div id="noise-note"></div>
+      </div>
+
       <!-- コントロールバー -->
       <div id="controls">
         <button id="btn-start" class="ctl-btn btn-start">▶ START</button>
-        <button id="btn-rec" class="ctl-btn btn-rec" disabled>⏺ REC</button>
+        <button id="btn-rec" class="ctl-btn btn-rec btn-expert" disabled>⏺ REC</button>
         <button id="btn-stop" class="ctl-btn btn-stop" disabled>■ STOP</button>
-        <button id="btn-calibrate" class="ctl-btn btn-cal">CAL</button>
+        <button id="btn-calibrate" class="ctl-btn btn-cal btn-expert">CAL</button>
       </div>
       <div id="controls-2">
         <button id="btn-peak-reset" class="ctl-btn btn-peak">PEAK RST</button>
@@ -89,6 +107,11 @@
       <div id="history-panel" class="hidden">
         <canvas id="history-graph"></canvas>
         <div id="history-controls">
+          <div id="history-range">
+            <button class="btn-range active" data-range="5">5min</button>
+            <button class="btn-range" data-range="30">30min</button>
+            <button class="btn-range" data-range="0">ALL</button>
+          </div>
           <button id="btn-history-clear">CLEAR</button>
         </div>
       </div>
@@ -107,6 +130,20 @@
         <button id="ios-guide-close">OK</button>
       </div>
     </div>
+  </div>
+
+  <!-- SW 更新通知バナー（初期非表示） -->
+  <div id="sw-update-banner" class="hidden">
+    <span>アプリの更新があります</span>
+    <button id="btn-sw-update">更新して再読み込み</button>
+    <button id="btn-sw-dismiss">後で</button>
+  </div>
+
+  <!-- PWA インストールバナー（初期非表示） -->
+  <div id="install-banner" class="hidden">
+    <span>ホーム画面に追加できます</span>
+    <button id="btn-install">インストール</button>
+    <button id="btn-install-dismiss">×</button>
   </div>
 
   <!-- ヘルプオーバーレイ -->
@@ -211,7 +248,8 @@
           <div class="help-item">
             <div class="help-label">HIST（履歴グラフ）</div>
             <div class="help-desc">
-              直近 5 分間の dBFS（緑）/ dBA（黄）/ LUFS-I（紫）を折れ線で表示。
+              dBFS（緑）/ dBA（黄）/ LUFS-I（紫）を折れ線で表示。
+              <strong>5min / 30min / ALL</strong> ボタンで表示期間を切り替えられます。
               IndexedDB に保存されるため、ページを閉じても残ります。CLEAR で全削除できます。
             </div>
           </div>
@@ -263,7 +301,7 @@
 
           <div class="help-item">
             <div class="help-label">HIST</div>
-            <div class="help-desc">計測履歴グラフを表示／非表示します。直近 5 分間のトレンドを折れ線グラフで確認できます。</div>
+            <div class="help-desc">計測履歴グラフを表示／非表示します。5min / 30min / ALL で表示期間を切り替えられます。</div>
           </div>
         </section>
 

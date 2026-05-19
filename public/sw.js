@@ -1,8 +1,8 @@
-const CACHE = 'loudness-meter-v1'
+const CACHE = 'loudness-meter-v2'
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.add('./')))
-  self.skipWaiting()
+  // skipWaiting しない — main.js からの SKIP_WAITING メッセージを待つ
 })
 
 self.addEventListener('activate', e => {
@@ -24,4 +24,9 @@ self.addEventListener('fetch', e => {
       return cached ?? fresh
     })
   )
+})
+
+// main.js から SKIP_WAITING を受け取ったら即時有効化
+self.addEventListener('message', e => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting()
 })
