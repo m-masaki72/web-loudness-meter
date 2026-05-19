@@ -41,6 +41,17 @@ export async function loadRecent(limitMs = 5 * 60 * 1000) {
   })
 }
 
+export async function loadAll() {
+  const d = await openDB()
+  return new Promise((resolve, reject) => {
+    const req = d.transaction(STORE_NAME, 'readonly')
+      .objectStore(STORE_NAME)
+      .getAll()
+    req.onsuccess = () => resolve(req.result)
+    req.onerror   = () => reject(req.error)
+  })
+}
+
 export async function clearHistory() {
   const d = await openDB()
   return new Promise((resolve, reject) => {

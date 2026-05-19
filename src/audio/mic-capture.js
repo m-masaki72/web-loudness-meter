@@ -38,6 +38,6 @@ export async function initAudio() {
 }
 
 export function stopAudio({ ctx, stream }) {
-  stream.getTracks().forEach(t => t.stop())
-  ctx.close()
+  stream?.getTracks().forEach(t => t.stop())
+  ctx?.close().catch(() => {})
 }

@@ -94,9 +94,9 @@ export class BarMeter {
       // 点灯セグメント（色グループ単位でshadow設定をまとめる）
       ctx.shadowBlur = 5
       const colorGroups = [
-        { lo: 0,          hi: SEG_YELLOW, fill: '#00ff88', glow: 'rgba(0,255,136,0.45)' },
-        { lo: SEG_YELLOW, hi: SEG_RED,    fill: '#ffcc00', glow: 'rgba(255,204,0,0.5)'  },
-        { lo: SEG_RED,    hi: SEG_COUNT,  fill: '#ff3333', glow: 'rgba(255,51,51,0.6)'  },
+        { lo: 0,          hi: SEG_YELLOW, fill: '#00ff88', glow: 'rgba(0,255,136,0.5)' },
+        { lo: SEG_YELLOW, hi: SEG_RED,    fill: '#ffcc00', glow: 'rgba(255,204,0,0.5)' },
+        { lo: SEG_RED,    hi: SEG_COUNT,  fill: '#ff3333', glow: 'rgba(255,51,51,0.5)' },
       ]
       for (const g of colorGroups) {
         const hi = Math.min(g.hi, litSegs)
@@ -119,7 +119,7 @@ export class BarMeter {
         const isRed = peakSeg >= SEG_RED, isYellow = peakSeg >= SEG_YELLOW
         ctx.fillStyle  = isRed ? '#ff3333' : isYellow ? '#ffcc00' : '#00ff88'
         ctx.shadowBlur = 8
-        ctx.shadowColor = isRed ? 'rgba(255,51,51,0.6)' : isYellow ? 'rgba(255,204,0,0.5)' : 'rgba(0,255,136,0.45)'
+        ctx.shadowColor = isRed ? 'rgba(255,51,51,0.5)' : isYellow ? 'rgba(255,204,0,0.5)' : 'rgba(0,255,136,0.5)'
         ctx.fillRect(x0, py, bw, psh)
         ctx.shadowBlur = 0
       }

@@ -13,9 +13,15 @@ export class WakeLockManager {
     try {
       this._lock = await navigator.wakeLock.request('screen')
       this._active = true
-      this._lock.addEventListener('release', () => this._setIndicator(false))
+      this._lock.addEventListener('release', () => {
+        this._active = false
+        this._setIndicator(false)
+      })
       this._setIndicator(true)
-    } catch { this._setIndicator(false) }
+    } catch (err) {
+      console.warn('Wake lock request failed:', err)
+      this._setIndicator(false)
+    }
   }
 
   release() {
