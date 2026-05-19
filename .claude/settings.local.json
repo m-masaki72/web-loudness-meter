@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git remote *)",
+      "Bash(grep -rn \"^[[:space:]]*//.*\\\\|^[[:space:]]*\\\\/\\\\*\" src/ public/ --include=\"*.js\")",
+      "Bash(git restore *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\memen\\\\Desktop\\\\web-loudness-meter\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "Bash(grep -E \"\\\\.\\(js|html|css\\)$\")",
+      "Bash(taskkill *)",
+      "Bash(Get-Process -Name node -ErrorAction SilentlyContinue)",
+      "Bash(Stop-Process -Force)",
+      "Bash(powershell *)",
+      "Bash(git rm *)"
+    ]
+  }
+}

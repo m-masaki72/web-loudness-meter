@@ -7,8 +7,8 @@ const FREQ_MIN = 20
 const FREQ_MAX = 20000
 const DB_MIN = -90
 const DB_MAX = 0
+const BAR_WIDTH = 2
 
-// 表示する周波数グリッド線
 const GRID_FREQS = [100, 200, 500, 1000, 2000, 5000, 10000]
 
 function freqToX(freq, w) {
@@ -19,15 +19,12 @@ function dbToY(db, h) {
   return h * (1 - (db - DB_MIN) / (DB_MAX - DB_MIN))
 }
 
-function binToFreq(bin, binCount, sampleRate) {
-  return (bin / binCount) * (sampleRate / 2)
-}
-
 export class SpectrumAnalyzer {
   constructor(canvas) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
     this._sampleRate = 48000
+    this._barBins = null   // リサイズ時に事前計算した bin インデックス配列
     this._resize()
     new ResizeObserver(() => { this._resize(); this.draw(null) }).observe(canvas)
   }
@@ -40,6 +37,19 @@ export class SpectrumAnalyzer {
     this.ctx.scale(dpr, dpr)
     this.w = rect.width
     this.h = rect.height
+    this._buildBarBins()
+  }
+
+  // 各バーの対数周波数→bin インデックスを事前計算（resize 時のみ）
+  _buildBarBins() {
+    const steps = Math.floor(this.w / BAR_WIDTH)
+    const logMin = Math.log10(FREQ_MIN)
+    const logMax = Math.log10(FREQ_MAX)
+    this._barBins = new Float32Array(steps)
+    for (let i = 0; i < steps; i++) {
+      const logF = logMin + (i / steps) * (logMax - logMin)
+      this._barBins[i] = Math.pow(10, logF)  // 周波数 (Hz) を保存
+    }
   }
 
   draw(freqData, sampleRate) {
@@ -68,36 +78,23 @@ export class SpectrumAnalyzer {
       ctx.fillText(label, x, h - 2)
     }
 
-    if (!freqData) return
+    if (!freqData || !this._barBins) return
 
     const binCount = freqData.length
-    const BAR_WIDTH = 2
-
-    // 各バーを対数スケールで描画
-    const logMin = Math.log10(FREQ_MIN)
-    const logMax = Math.log10(FREQ_MAX)
-    const steps = Math.floor(w / BAR_WIDTH)
+    const nyquist = sampleRate / 2
+    const steps = this._barBins.length
 
     for (let i = 0; i < steps; i++) {
-      const logF = logMin + (i / steps) * (logMax - logMin)
-      const freq  = Math.pow(10, logF)
-      const bin   = Math.round(freq / (sampleRate / 2) * binCount)
+      const bin = Math.round(this._barBins[i] / nyquist * binCount)
       if (bin < 0 || bin >= binCount) continue
 
       const db = freqData[bin]
       const y  = dbToY(Math.max(DB_MIN, Math.min(DB_MAX, db)), h - 10)
       const barH = h - 10 - y
-
       if (barH <= 0) continue
 
-      // 高さに応じて色変え（緑→黄→赤）
       const frac = 1 - y / (h - 10)
-      let color
-      if (frac > 0.9)       color = '#ff3333'
-      else if (frac > 0.75) color = '#ffcc00'
-      else                  color = '#00ff88'
-
-      ctx.fillStyle = color
+      ctx.fillStyle = frac > 0.9 ? '#ff3333' : frac > 0.75 ? '#ffcc00' : '#00ff88'
       ctx.fillRect(i * BAR_WIDTH, y, BAR_WIDTH - 1, barH)
     }
   }

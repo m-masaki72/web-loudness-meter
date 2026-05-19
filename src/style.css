@@ -334,6 +334,13 @@ canvas { display: block; width: 100%; }
   width: 70px;
   margin-left: 6px;
 }
+.cal-error {
+  font-size: 10px;
+  color: var(--red);
+  text-shadow: 0 0 6px rgba(255,51,51,0.5);
+  letter-spacing: 0.5px;
+  margin: 0;
+}
 #calibration-panel button {
   padding: 6px 14px;
   min-height: 44px;

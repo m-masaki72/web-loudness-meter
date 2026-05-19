@@ -2,6 +2,7 @@ export class Oscilloscope {
   constructor(canvas) {
     this.canvas = canvas
     this.ctx    = canvas.getContext('2d')
+    this._offscreen = null  // スキャンライン + グリッドのキャッシュ
     this._resize()
     new ResizeObserver(() => { this._resize(); this.draw(null) }).observe(canvas)
   }
@@ -14,24 +15,50 @@ export class Oscilloscope {
     this.ctx.scale(dpr, dpr)
     this.w = rect.width
     this.h = rect.height
+    this._buildOffscreen()
+  }
+
+  // スキャンライン + グリッドをオフスクリーンにキャッシュ（リサイズ時のみ再生成）
+  _buildOffscreen() {
+    const { w, h } = this
+    if (w === 0 || h === 0) return
+    const oc = document.createElement('canvas')
+    oc.width = w; oc.height = h
+    const ctx = oc.getContext('2d')
+
+    // スキャンライン
+    ctx.fillStyle = 'rgba(0,0,0,0.08)'
+    for (let y = 0; y < h; y += 4) ctx.fillRect(0, y, w, 1)
+
+    // グリッド
+    ctx.strokeStyle = 'rgba(0, 255, 136, 0.06)'
+    ctx.lineWidth = 0.5
+    for (let x = 0; x <= w; x += w / 8) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke()
+    }
+    for (let y = 0; y <= h; y += h / 4) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
+    }
+    ctx.strokeStyle = 'rgba(0, 255, 136, 0.12)'
+    ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke()
+
+    this._offscreen = oc
   }
 
   draw(waveform) {
     const ctx = this.ctx, w = this.w, h = this.h
-    const cx = w / 2, cy = h / 2
+    const cy = h / 2
 
-    // 背景：フェードアウト（余韻効果）
+    // 背景フェードアウト（余韻効果）
     ctx.fillStyle = 'rgba(0, 8, 4, 0.35)'
     ctx.fillRect(0, 0, w, h)
 
-    // スキャンライン（CRT感）
-    for (let y = 0; y < h; y += 4) {
-      ctx.fillStyle = 'rgba(0,0,0,0.08)'
-      ctx.fillRect(0, y, w, 1)
-    }
+    // キャッシュ済みスキャンライン + グリッドを1回の drawImage で合成
+    if (this._offscreen) ctx.drawImage(this._offscreen, 0, 0)
 
     if (!waveform || waveform.length === 0) {
-      this._drawIdle(ctx, cx, cy, w)
+      this._drawIdle(ctx, cy, w, h)
       return
     }
 
@@ -62,9 +89,6 @@ export class Oscilloscope {
     this._tracePath(ctx, waveform, N, step, cy, h)
     ctx.stroke()
     ctx.shadowBlur = 0
-
-    // グリッド
-    this._drawGrid(ctx, w, h)
   }
 
   _tracePath(ctx, waveform, N, step, cy, h) {
@@ -74,29 +98,11 @@ export class Oscilloscope {
     }
   }
 
-  _drawGrid(ctx, w, h) {
-    ctx.strokeStyle = 'rgba(0, 255, 136, 0.06)'
-    ctx.lineWidth = 0.5
-    // 縦線
-    for (let x = 0; x <= w; x += w / 8) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke()
-    }
-    // 横線
-    for (let y = 0; y <= h; y += h / 4) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
-    }
-    // 中心線
-    ctx.strokeStyle = 'rgba(0, 255, 136, 0.12)'
-    ctx.lineWidth = 1
-    ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke()
-  }
-
-  _drawIdle(ctx, cx, cy, w) {
+  _drawIdle(ctx, cy, w, h) {
     ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)'
     ctx.lineWidth = 1
     ctx.shadowBlur = 6; ctx.shadowColor = '#00ff88'
     ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke()
     ctx.shadowBlur = 0
-    this._drawGrid(ctx, w, this.h)
   }
 }

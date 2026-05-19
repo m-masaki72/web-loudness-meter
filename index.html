@@ -23,28 +23,28 @@
       <div id="title-bar">
         <span class="title-text">LOUDNESS METER</span>
         <span id="wake-lock-indicator" class="indicator off" title="Screen Wake Lock">⊙</span>
-        <button id="btn-mode-toggle" class="ctl-btn btn-mode">EXPERT</button>
+        <button id="btn-mode-toggle" class="ctl-btn btn-mode" aria-label="表示モードを切り替え">EXPERT</button>
       </div>
 
       <!-- オシロスコープ -->
-      <section class="meter-section" id="scope-section">
-        <canvas id="oscilloscope"></canvas>
+      <section class="meter-section" id="scope-section" aria-label="波形表示">
+        <canvas id="oscilloscope" role="img" aria-label="リアルタイム音声波形"></canvas>
         <div class="section-label">WAVEFORM</div>
       </section>
 
       <!-- LEDバーグラフ -->
-      <section class="meter-section" id="bar-section">
-        <canvas id="bar-meter"></canvas>
+      <section class="meter-section" id="bar-section" aria-label="LEDバーグラフ">
+        <canvas id="bar-meter" role="img" aria-label="dBFS・dBA・LUFS-I のピーク付きバーグラフ"></canvas>
       </section>
 
       <!-- アナログ針メーター -->
-      <section class="meter-section" id="analog-section">
-        <canvas id="analog-meter"></canvas>
+      <section class="meter-section" id="analog-section" aria-label="アナログ針メーター">
+        <canvas id="analog-meter" role="img" aria-label="バネ物理シミュレーション VU メーター"></canvas>
       </section>
 
       <!-- スペクトラムアナライザー -->
-      <section class="meter-section" id="spectrum-section">
-        <canvas id="spectrum"></canvas>
+      <section class="meter-section" id="spectrum-section" aria-label="スペクトラムアナライザー">
+        <canvas id="spectrum" role="img" aria-label="20Hz〜20kHz リアルタイム周波数スペクトラム"></canvas>
         <div class="section-label">SPECTRUM</div>
       </section>
 
@@ -73,39 +73,39 @@
       </div>
 
       <!-- 騒音レベルインジケーター -->
-      <div id="noise-level">
-        <div id="noise-bar-wrap">
+      <div id="noise-level" role="status" aria-label="騒音レベルインジケーター">
+        <div id="noise-bar-wrap" aria-hidden="true">
           <div id="noise-bar"></div>
           <div id="noise-needle"></div>
         </div>
-        <div id="noise-zones">
+        <div id="noise-zones" aria-hidden="true">
           <span>静寂</span>
           <span>静か</span>
           <span>会話</span>
           <span>騒音</span>
           <span>危険</span>
         </div>
-        <div id="noise-label">---</div>
+        <div id="noise-label" aria-live="polite">---</div>
         <div id="noise-note"></div>
       </div>
 
       <!-- コントロールバー -->
-      <div id="controls">
-        <button id="btn-start" class="ctl-btn btn-start">▶ START</button>
-        <button id="btn-rec" class="ctl-btn btn-rec btn-expert" disabled>⏺ REC</button>
-        <button id="btn-stop" class="ctl-btn btn-stop" disabled>■ STOP</button>
-        <button id="btn-calibrate" class="ctl-btn btn-cal btn-expert">CAL</button>
+      <div id="controls" role="group" aria-label="計測コントロール">
+        <button id="btn-start" class="ctl-btn btn-start" aria-label="計測開始">▶ START</button>
+        <button id="btn-rec" class="ctl-btn btn-rec btn-expert" aria-label="録音開始" disabled>⏺ REC</button>
+        <button id="btn-stop" class="ctl-btn btn-stop" aria-label="計測・録音停止" disabled>■ STOP</button>
+        <button id="btn-calibrate" class="ctl-btn btn-cal btn-expert" aria-label="dBSPL キャリブレーション">CAL</button>
       </div>
-      <div id="controls-2">
-        <button id="btn-peak-reset" class="ctl-btn btn-peak">PEAK RST</button>
-        <button id="btn-spl-toggle" class="ctl-btn btn-spl">dBSPL OFF</button>
-        <button id="btn-history-toggle" class="ctl-btn btn-hist">HIST</button>
-        <button id="btn-help" class="ctl-btn btn-help">?</button>
+      <div id="controls-2" role="group" aria-label="表示コントロール">
+        <button id="btn-peak-reset" class="ctl-btn btn-peak" aria-label="ピークホールドをリセット">PEAK RST</button>
+        <button id="btn-spl-toggle" class="ctl-btn btn-spl" aria-label="dBSPL 表示の切り替え" aria-pressed="false">dBSPL OFF</button>
+        <button id="btn-history-toggle" class="ctl-btn btn-hist" aria-label="計測履歴グラフの表示切替">HIST</button>
+        <button id="btn-help" class="ctl-btn btn-help" aria-label="ヘルプを開く">?</button>
       </div>
 
       <!-- 履歴グラフパネル（初期非表示） -->
-      <div id="history-panel" class="hidden">
-        <canvas id="history-graph"></canvas>
+      <div id="history-panel" class="hidden" role="region" aria-label="計測履歴グラフ">
+        <canvas id="history-graph" role="img" aria-label="dBFS・dBA・LUFS-I の時系列グラフ"></canvas>
         <div id="history-controls">
           <div id="history-range">
             <button class="btn-range active" data-range="5">5min</button>
@@ -117,9 +117,10 @@
       </div>
 
       <!-- キャリブレーションパネル（初期非表示） -->
-      <div id="calibration-panel" class="hidden">
+      <div id="calibration-panel" class="hidden" role="dialog" aria-modal="true" aria-label="dBSPL キャリブレーション">
         <p>現在の測定値: <span id="cal-current">---.-</span> dBFS</p>
         <label>実際のdBSPL: <input id="cal-input" type="number" value="75" min="0" max="140" /></label>
+        <p id="cal-error" class="cal-error hidden" role="alert">0〜140 の数値を入力してください</p>
         <button id="cal-save">保存</button>
         <button id="cal-cancel">キャンセル</button>
       </div>
@@ -147,11 +148,11 @@
   </div>
 
   <!-- ヘルプオーバーレイ -->
-  <div id="help-overlay" class="hidden">
+  <div id="help-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="ヘルプ">
     <div id="help-modal">
       <div id="help-header">
         <span>MANUAL</span>
-        <button id="btn-help-close">✕</button>
+        <button id="btn-help-close" aria-label="ヘルプを閉じる">✕</button>
       </div>
       <div id="help-body">
 
@@ -302,6 +303,39 @@
           <div class="help-item">
             <div class="help-label">HIST</div>
             <div class="help-desc">計測履歴グラフを表示／非表示します。5min / 30min / ALL で表示期間を切り替えられます。</div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">SIMPLE / EXPERT ボタン</div>
+            <div class="help-desc">
+              タイトルバー右端のボタンで表示モードを切り替えます。<br>
+              <strong>SIMPLE モード</strong>（初期設定）：波形・騒音レベル・dBFS 値のみ表示。初めての方に最適です。<br>
+              <strong>EXPERT モード</strong>：LED バー・アナログメーター・スペクトラム・全数値・録音など全機能を表示。
+              設定はブラウザに保存されます。
+            </div>
+          </div>
+        </section>
+
+        <section class="help-section">
+          <h2>騒音レベルの目安</h2>
+
+          <div class="help-item">
+            <div class="help-label">騒音レベルインジケーター</div>
+            <div class="help-desc">
+              デジタル表示の下にあるグラデーションバーと白い針で、現在の音量が日常生活のどのレベルに相当するかを示します。<br>
+              緑（静か）→ 黄（会話）→ 橙（騒がしい）→ 赤（危険）の順に音量が大きくなります。<br>
+              <strong>目安：</strong>
+              🌙 深夜・無響室（〜35dB）／
+              📚 静かな図書館（〜45dB）／
+              🏠 静かな住宅街（〜55dB）／
+              💬 普通の会話（〜65dB）／
+              🍽️ にぎやかな飲食店（〜75dB）／
+              🚗 幹線道路沿い（〜85dB）／
+              🏭 工事現場（〜95dB）／
+              ✈️ 飛行機エンジン近く（〜110dB）／
+              🚨 聴力障害の危険（110dB〜）<br>
+              CAL キャリブレーション未設定の場合は「参考値」として表示されます。
+            </div>
           </div>
         </section>
 

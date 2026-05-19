@@ -1,6 +1,7 @@
-const CACHE = 'loudness-meter-v2'
+const CACHE = 'loudness-meter-v3'
 
 self.addEventListener('install', e => {
+  // ルートだけ事前キャッシュ。JS/CSS はハッシュ付きなので fetch 時に動的キャッシュ
   e.waitUntil(caches.open(CACHE).then(c => c.add('./')))
   // skipWaiting しない — main.js からの SKIP_WAITING メッセージを待つ
 })
@@ -15,14 +16,27 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
+  // ナビゲーション以外の GET のみキャッシュ対象
+  if (e.request.method !== 'GET') return
+
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fresh = fetch(e.request).then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()))
+    fetch(e.request)
+      .then(res => {
+        // 成功したらキャッシュに保存（opaque レスポンスは除く）
+        if (res.ok) {
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()))
+        }
         return res
       })
-      return cached ?? fresh
-    })
+      .catch(() => {
+        // ネットワーク失敗時はキャッシュにフォールバック
+        return caches.match(e.request).then(cached => {
+          if (cached) return cached
+          // ナビゲーションはルートのキャッシュで代替
+          if (e.request.mode === 'navigate') return caches.match('./')
+          return new Response('Offline', { status: 503 })
+        })
+      })
   )
 })
 

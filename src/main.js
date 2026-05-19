@@ -42,7 +42,7 @@ const btnSwDismiss    = document.getElementById('btn-sw-dismiss')
 const installBanner   = document.getElementById('install-banner')
 const btnInstall      = document.getElementById('btn-install')
 const btnInstallDismiss = document.getElementById('btn-install-dismiss')
-const panel           = panel
+const panel           = document.getElementById('panel')
 const btnModeToggle   = document.getElementById('btn-mode-toggle')
 const calPanel    = document.getElementById('calibration-panel')
 const histPanel   = document.getElementById('history-panel')
@@ -311,6 +311,7 @@ btnPeakRst.addEventListener('click', () => {
 // --- dBSPL トグル ---
 btnSplToggle.addEventListener('click', () => {
   splMode = !splMode
+  btnSplToggle.setAttribute('aria-pressed', splMode)
   if (splMode) {
     btnSplToggle.textContent = 'dBSPL ON'
     btnSplToggle.classList.add('active')
@@ -374,12 +375,21 @@ calSave.addEventListener('click', () => {
   if (!running || !analyserReader) { calPanel.classList.add('hidden'); return }
   const measured = analyserReader.getDBFS()
   const actual   = parseFloat(calInput.value)
-  // S2: isFinite チェックで Infinity/-Infinity 値を弾く
-  if (isFinite(actual) && actual >= 0 && actual <= 140) setOffset(measured, actual)
-  calPanel.classList.add('hidden')
+  const calError = document.getElementById('cal-error')
+  if (isFinite(actual) && actual >= 0 && actual <= 140) {
+    setOffset(measured, actual)
+    calError.classList.add('hidden')
+    calPanel.classList.add('hidden')
+  } else {
+    calError.classList.remove('hidden')
+    calInput.focus()
+  }
 })
 
-calCancel.addEventListener('click', () => calPanel.classList.add('hidden'))
+calCancel.addEventListener('click', () => {
+  document.getElementById('cal-error').classList.add('hidden')
+  calPanel.classList.add('hidden')
+})
 
 // --- ヘルプ ---
 btnHelp.addEventListener('click', () => helpOverlay.classList.remove('hidden'))
