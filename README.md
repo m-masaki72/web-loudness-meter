@@ -7,7 +7,7 @@
 ## 機能
 
 - **SIMPLE / EXPERT モード** — タイトルバーのボタンで切替。SIMPLE は波形・騒音レベル・dBFS のみ表示、EXPERT は全機能表示（localStorage 永続）
-- **騒音レベルインジケーター** — グラデーションバー + 白い針で現在レベルを視覚化。9段階の生活騒音目安ラベルを表示
+- **騒音レベルインジケーター** — グラデーションバー + 白い針で現在レベルを視覚化。9種類の生活騒音目安ラベルを表示（深夜〜聴力障害の危険まで）
 - **リアルタイム波形表示** — CRT グロー風オシロスコープ（リサイズ・画面回転対応）
 - **LUFS 計測** — Momentary / Short-term / Integrated（ITU-R BS.1770-4 / EBU R128 準拠）
 - **FFT スペクトラムアナライザー** — 対数周波数スケール（20Hz〜20kHz）のリアルタイムバー表示
@@ -99,6 +99,14 @@ SIMPLE / EXPERT モードで表示内容が切り替わります。
 ```
 
 ## Changelog
+
+### v0.8.0（2026-05-20）
+- recorder.js: MIME fallback を `audio/mp4`（無効）→ `audio/wav` に修正、`onstop` のレース修正、AbortError（ユーザーキャンセル）と真のエラーを区別
+- main.js: `renderLoop` の null チェック、iOS 検出を feature detection 化、SW `controllerchange` メモリリーク修正、`fmt()` 返り値を `'---'` に統一
+- history-graph.js: LUFS-M（水色）チャンネル追加、1サンプル時のドット表示、中間時刻ラベル、キー欠損ガード
+- analog-meter.js: DAMPING 0.55 → 0.65 でオーバーシュート抑制
+- テスト: 72 → 80本（無音→トーン遷移・急激なレベル変化・長時間リーク・非 1kHz トーン追加）
+- ヘルプ: dBC 追記・LUFS-M 追記・dBSPL 説明簡潔化・ウェイクロック説明追加・騒音レベルを箇条書き化
 
 ### v0.7.0（2026-05-19）
 - アクセシビリティ: 全ボタンに `aria-label`、canvas に `role=img`、モーダルに `role=dialog`、騒音インジケーターに `aria-live`、dBSPL トグルに `aria-pressed`

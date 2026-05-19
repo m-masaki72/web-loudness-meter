@@ -162,50 +162,34 @@
           <div class="help-item">
             <div class="help-label">dBFS</div>
             <div class="help-desc">
-              デジタルフルスケール基準の音量レベル。0 dBFS が最大値で、それ以下の負の値で表されます。
-              <span class="help-warn">−12〜−3</span>（黄色）は大きめ、<span class="help-clip">−3 以上</span>（赤）はクリップ寸前です。
-              通常の会話・環境音は −40〜−20 dBFS 付近。
+              デジタルフルスケール基準の音量。0 dBFS が最大値。
+              <span class="help-warn">−12〜−3</span>（黄）は大きめ、<span class="help-clip">−3 以上</span>（赤）はクリップ寸前。
+              会話・環境音は −40〜−20 dBFS 付近が目安。
             </div>
           </div>
 
           <div class="help-item">
             <div class="help-label">dBSPL</div>
             <div class="help-desc">
-              CAL ボタンで基準音源（騒音計など）とキャリブレーションした後、<strong>dBSPL ON</strong> に切り替えると表示されます。
-              実際の音圧レベル（0 dB = 20 μPa 基準）に対応する値です。
+              CAL でキャリブレーション後、<strong>dBSPL ON</strong> にすると表示される実際の音圧レベル（0 dB = 20 μPa）。
             </div>
           </div>
 
           <div class="help-item">
-            <div class="help-label">dBA</div>
+            <div class="help-label">dBA / dBC</div>
             <div class="help-desc">
-              人間の聴覚特性（A 特性）に合わせて周波数補正した音量。低音・高音を耳に近い形で重み付けしており、
-              騒音規制や職場環境の評価でよく使われます。dBFS より若干低めの値になることが多いです。
+              <strong>dBA</strong>：人の聴覚特性（A 特性）で補正した音量。騒音規制の基準として広く使われます。<br>
+              <strong>dBC</strong>：C 特性補正（低音を重視）。内部計算のみで数値表示はありません。
             </div>
           </div>
 
           <div class="help-item">
-            <div class="help-label">LUFS-M（Momentary）</div>
+            <div class="help-label">LUFS-M / S / I</div>
             <div class="help-desc">
-              直近 <strong>400 ミリ秒</strong>のラウドネス。瞬間的な音量の大小を素早く反映します。
-              音楽・音声のリアルタイムモニタリングに最適。EBU R128 / ITU-R BS.1770-4 準拠。
-            </div>
-          </div>
-
-          <div class="help-item">
-            <div class="help-label">LUFS-S（Short-term）</div>
-            <div class="help-desc">
-              直近 <strong>3 秒間</strong>のラウドネス。LUFS-M より変動が少なく、
-              シーン単位の音量感をつかむのに向いています。
-            </div>
-          </div>
-
-          <div class="help-item">
-            <div class="help-label">LUFS-I（Integrated）</div>
-            <div class="help-desc">
-              計測開始からの<strong>累積ラウドネス</strong>。放送・配信の規格値として使われます。
-              ターゲット：放送 <strong>−23 LUFS</strong>（EBU R128）、ストリーミング <strong>−14 LUFS</strong>（Spotify/YouTube 目安）。
-              ゲーティング処理（無音区間を除外）が入るため、静寂が長くても値が下がりにくいです。
+              ITU-R BS.1770-4 準拠のラウドネス（EBU R128）。<br>
+              <strong>M</strong>：直近 400ms（瞬間値）　<strong>S</strong>：直近 3s（シーン値）　<strong>I</strong>：計測開始からの累積<br>
+              放送ターゲット：<strong>−23 LUFS</strong>、ストリーミング目安：<strong>−14 LUFS</strong>。
+              I はゲーティング処理で無音区間を除外します。
             </div>
           </div>
         </section>
@@ -249,9 +233,8 @@
           <div class="help-item">
             <div class="help-label">HIST（履歴グラフ）</div>
             <div class="help-desc">
-              dBFS（緑）/ dBA（黄）/ LUFS-I（紫）を折れ線で表示。
-              <strong>5min / 30min / ALL</strong> ボタンで表示期間を切り替えられます。
-              IndexedDB に保存されるため、ページを閉じても残ります。CLEAR で全削除できます。
+              dBFS（緑）/ dBA（黄）/ LUFS-M（水色）/ LUFS-I（紫）を折れ線で表示。
+              <strong>5min / 30min / ALL</strong> で期間切替、CLEAR で全削除。ページを閉じても保持されます。
             </div>
           </div>
         </section>
@@ -294,25 +277,28 @@
           <div class="help-item">
             <div class="help-label">dBSPL OFF / ON</div>
             <div class="help-desc">
-              OFF のとき：dBFS / dBA（生の測定値）を表示。<br>
-              ON のとき：CAL で設定したオフセットを加算した dBSPL / dBSPL(A) を表示。
-              キャリブレーション前は ON にしても値は変わりません。
+              <strong>OFF</strong>：生のデジタル値（dBFS / dBA）を表示。<br>
+              <strong>ON</strong>：CAL で設定したオフセットを加えた音圧値（dBSPL / dBSPL(A)）を表示。CAL 未設定では変化しません。
             </div>
           </div>
 
           <div class="help-item">
             <div class="help-label">HIST</div>
-            <div class="help-desc">計測履歴グラフを表示／非表示します。5min / 30min / ALL で表示期間を切り替えられます。</div>
+            <div class="help-desc">計測履歴グラフを表示 / 非表示します。</div>
           </div>
 
           <div class="help-item">
-            <div class="help-label">SIMPLE / EXPERT ボタン</div>
+            <div class="help-label">SIMPLE / EXPERT</div>
             <div class="help-desc">
-              タイトルバー右端のボタンで表示モードを切り替えます。<br>
-              <strong>SIMPLE モード</strong>（初期設定）：波形・騒音レベル・dBFS 値のみ表示。初めての方に最適です。<br>
-              <strong>EXPERT モード</strong>：LED バー・アナログメーター・スペクトラム・全数値・録音など全機能を表示。
-              設定はブラウザに保存されます。
+              タイトルバー右端で切り替えます。<br>
+              <strong>SIMPLE</strong>（初期）：波形・騒音レベル・dBFS のみ。はじめての方向け。<br>
+              <strong>EXPERT</strong>：LED バー・スペクトラム・全数値・録音など全機能。設定はブラウザに保存されます。
             </div>
+          </div>
+
+          <div class="help-item">
+            <div class="help-label">⊙ ウェイクロック</div>
+            <div class="help-desc">タイトルバーのインジケーター。緑なら Screen Wake Lock 有効（画面オフを防止）、灰色なら無効または非対応です。</div>
           </div>
         </section>
 
@@ -322,19 +308,16 @@
           <div class="help-item">
             <div class="help-label">騒音レベルインジケーター</div>
             <div class="help-desc">
-              デジタル表示の下にあるグラデーションバーと白い針で、現在の音量が日常生活のどのレベルに相当するかを示します。<br>
-              緑（静か）→ 黄（会話）→ 橙（騒がしい）→ 赤（危険）の順に音量が大きくなります。<br>
-              <strong>目安：</strong>
-              🌙 深夜・無響室（〜35dB）／
-              📚 静かな図書館（〜45dB）／
-              🏠 静かな住宅街（〜55dB）／
-              💬 普通の会話（〜65dB）／
-              🍽️ にぎやかな飲食店（〜75dB）／
-              🚗 幹線道路沿い（〜85dB）／
-              🏭 工事現場（〜95dB）／
-              ✈️ 飛行機エンジン近く（〜110dB）／
-              🚨 聴力障害の危険（110dB〜）<br>
-              CAL キャリブレーション未設定の場合は「参考値」として表示されます。
+              グラデーションバー（緑→赤）と白い針で現在のレベルを表示。CAL 未設定時は「参考値」扱いです。<br><br>
+              🌙 〜35dB　深夜・無響室<br>
+              📚 〜45dB　静かな図書館<br>
+              🏠 〜55dB　静かな住宅街<br>
+              💬 〜65dB　普通の会話<br>
+              🍽️ 〜75dB　にぎやかな飲食店<br>
+              🚗 〜85dB　幹線道路沿い<br>
+              🏭 〜95dB　工事現場<br>
+              ✈️ 〜110dB　飛行機エンジン近く<br>
+              🚨 110dB〜　聴力障害の危険
             </div>
           </div>
         </section>
@@ -343,7 +326,7 @@
           <h2>よくある質問</h2>
 
           <div class="help-item">
-            <div class="help-label">値が表示されない / ---.- のまま</div>
+            <div class="help-label">値が表示されない / --- のまま</div>
             <div class="help-desc">START ボタンを押してからマイクの許可を与えてください。HTTPS または localhost 環境が必要です。</div>
           </div>
 
