@@ -6,6 +6,8 @@
 
 ## 機能
 
+- **SIMPLE / EXPERT モード** — タイトルバーのボタンで切替。SIMPLE は波形・騒音レベル・dBFS のみ表示、EXPERT は全機能表示（localStorage 永続）
+- **騒音レベルインジケーター** — グラデーションバー + 白い針で現在レベルを視覚化。9段階の生活騒音目安ラベルを表示
 - **リアルタイム波形表示** — CRT グロー風オシロスコープ（リサイズ・画面回転対応）
 - **LUFS 計測** — Momentary / Short-term / Integrated（ITU-R BS.1770-4 / EBU R128 準拠）
 - **FFT スペクトラムアナライザー** — 対数周波数スケール（20Hz〜20kHz）のリアルタイムバー表示
@@ -14,12 +16,12 @@
 - **dBSPL キャリブレーション** — 外部騒音計との比較でオフセットを補正（localStorage 永続保存）
 - **ピーク値リセット** — `PEAK RST` ボタンで LEDバーのピークホールドをリセット
 - **計測履歴グラフ** — IndexedDB に1秒ごと保存、5min / 30min / ALL で表示期間を切替可能
-- **録音・保存** — webm/opus で録音、Web Share API 経由でエクスポート（iOS 対応）
+- **録音・保存** — webm/opus で録音、`loudness-YYYYMMDD-HHmmss.webm` 形式で保存（iOS は Web Share API）
 - **Screen Wake Lock** — 計測中の画面オフを防止
-- **インアプリ説明書** — `?` ボタンで計測値・グラフ・ボタンの解説をオーバーレイ表示
+- **インアプリ説明書** — `?` ボタンで全機能の解説をオーバーレイ表示
 - **PWA 対応** — ホーム画面へのインストール可能（インストールバナー表示）
 - **自動更新通知** — Service Worker の新バージョン検出時にバナーで通知、ユーザー確認後に即時反映
-- **PC・スマホ両対応** — Safe Area / overscroll 対応、タッチターゲット 44px+、録音ファイルは `loudness-YYYYMMDD-HHmmss.webm` 形式
+- **PC・スマホ両対応** — Safe Area / overscroll 対応、タッチターゲット 44px+
 
 ## ブラウザ動作要件
 
@@ -78,36 +80,48 @@ AudioWorklet は Blob URL 経由でロードするため、`file://` プロト�
 
 ## UI レイアウト
 
+SIMPLE / EXPERT モードで表示内容が切り替わります。
+
 ```
-[Title Bar]
-[Oscilloscope]       — リアルタイム波形
-[LED Bar Meter]      — dBFS / dBA / LUFS-I（ピークホールド付き）
-[Spectrum Analyzer]  — FFT 周波数スペクトラム
-[Analog VU Meter]    — 針式メーター
-[dBFS | dBA | LUFS-M | LUFS-S | LUFS-I]  — デジタル数値表示
-[START | REC | STOP | CAL]
-[PEAK RST | dBSPL | HIST | ?]
-[History Graph]      — 折りたたみ式 (5min/30min/ALL 切替)
-[Calibration Panel]  — 折りたたみ式キャリブレーション
-[SW 更新バナー]      — 新バージョン検出時に画面下部に表示
-[インストールバナー] — PWA インストール促進
+[Title Bar + SIMPLE/EXPERT ボタン]
+[Oscilloscope]            — リアルタイム波形（両モード共通）
+[LED Bar Meter]           — dBFS / dBA / LUFS-I（EXPERT のみ）
+[Spectrum Analyzer]       — FFT 周波数スペクトラム（EXPERT のみ）
+[Analog VU Meter]         — 針式メーター（EXPERT のみ）
+[dBFS | dBA | LUFS-M | LUFS-S | LUFS-I]  — デジタル表示（SIMPLE は dBFS のみ大きく）
+[Noise Level Indicator]   — 騒音レベルバー + 生活騒音目安（両モード共通）
+[START | REC | STOP | CAL]  — REC/CAL は EXPERT のみ
+[PEAK RST | dBSPL | HIST | ?]  — EXPERT のみ
+[History Graph]           — 折りたたみ式（5min/30min/ALL 切替）
+[Calibration Panel]       — 折りたたみ式
+[SW 更新バナー]           — 新バージョン検出時に画面下部に表示
+[インストールバナー]      — PWA インストール促進
 ```
 
 ## Changelog
 
+### v0.7.0（2026-05-19）
+- アクセシビリティ: 全ボタンに `aria-label`、canvas に `role=img`、モーダルに `role=dialog`、騒音インジケーターに `aria-live`、dBSPL トグルに `aria-pressed`
+- パフォーマンス: オシロスコープのスキャンライン + グリッドをオフスクリーンキャンバスにキャッシュ、スペクトラムの対数周波数 → bin 変換をリサイズ時に事前計算
+- Service Worker v3: ネットワークファースト + キャッシュフォールバック戦略に変更、オフライン時のナビゲーション対応を強化
+- バグ修正: `const panel = panel` 自己参照バグを修正
+- UX: CAL パネルの不正値入力時にインラインエラーメッセージを表示
+- ヘルプ更新: SIMPLE/EXPERT モードと騒音レベル9段階目安を追記
+
 ### v0.6.0（2026-05-19）
 - バグ修正: Wake Lock の `_active` 状態不整合、`stopAudio()` null クラッシュ、CAL ハンドラ null チェック漏れ
-- エラー処理: 録音保存失敗時の alert、履歴クリア失敗時の防御、`spectrum.draw` 引数修正
+- エラー処理: 録音保存失敗時の alert、履歴クリア失敗時の防御
 - polish: LED バーの glow opacity 統一、CAL ボタン無効時の点滅フィードバック
 
 ### v0.5.0（2026-05-18）
-- 履歴グラフに 5min / 30min / ALL 表示期間切替を追加
-- Service Worker 更新通知バナー、PWA インストールバナー（`beforeinstallprompt`）
+- SIMPLE / EXPERT モード切り替え（localStorage 永続）
+- 騒音レベルインジケーター（グラデーションバー + 9段階ラベル）
+- 履歴グラフ 5min / 30min / ALL 表示期間切替
+- Service Worker 更新通知バナー、PWA インストールバナー
 - 録音ファイル名を `loudness-YYYYMMDD-HHmmss.webm` 形式に変更
-- IndexedDB テスト追加（fake-indexeddb）
 
 ### v0.4.0（2026-05-18）
-- Vitest 2 によるテストスイート導入（ユニット + インテグレーション、72テスト）
+- Vitest 2 によるテストスイート導入（72テスト: DSP ユニット + IndexedDB + フルパイプライン）
 - タッチターゲット 44px+、Safe Area 対応、`overscroll-behavior: none`
 
 ### v0.3.1（2026-05-10）
