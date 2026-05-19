@@ -13,12 +13,13 @@
 - **dBSPL 表示トグル** — `dBSPL OFF/ON` ボタンでキャリブレーション済み値に切替
 - **dBSPL キャリブレーション** — 外部騒音計との比較でオフセットを補正（localStorage 永続保存）
 - **ピーク値リセット** — `PEAK RST` ボタンで LEDバーのピークホールドをリセット
-- **計測履歴グラフ** — IndexedDB に1秒ごと保存、`HIST` ボタンで折れ線グラフ表示
+- **計測履歴グラフ** — IndexedDB に1秒ごと保存、5min / 30min / ALL で表示期間を切替可能
 - **録音・保存** — webm/opus で録音、Web Share API 経由でエクスポート（iOS 対応）
 - **Screen Wake Lock** — 計測中の画面オフを防止
 - **インアプリ説明書** — `?` ボタンで計測値・グラフ・ボタンの解説をオーバーレイ表示
-- **PWA 対応** — ホーム画面へのインストール可能
-- **PC・スマホ両対応** — スクロール対応レイアウト
+- **PWA 対応** — ホーム画面へのインストール可能（インストールバナー表示）
+- **自動更新通知** — Service Worker の新バージョン検出時にバナーで通知、ユーザー確認後に即時反映
+- **PC・スマホ両対応** — Safe Area / overscroll 対応、タッチターゲット 44px+、録音ファイルは `loudness-YYYYMMDD-HHmmss.webm` 形式
 
 ## ブラウザ動作要件
 
@@ -34,7 +35,9 @@
 
 ```bash
 npm install
-npm run dev   # http://localhost:5173
+npm run dev      # http://localhost:5173
+npm test         # ユニット + インテグレーションテスト（72テスト）
+npm run coverage # カバレッジレポート
 ```
 
 スマートフォンで試す場合は同一 LAN 上から `http://<PCのIP>:5173` にアクセス（getUserMedia は HTTPS 必須のため Chrome Android 推奨）。
@@ -50,6 +53,7 @@ npm run gen-icons   # public/icons/ に PNG 出力
 | 項目 | 内容 |
 |------|------|
 | ビルド | Vite 5 + Vanilla JS (ES Modules) |
+| テスト | Vitest 2 + fake-indexeddb（72テスト、`npm test`） |
 | 音声取得 | `getUserMedia`（AGC / echo / noise 全 OFF） |
 | DSP | `AnalyserNode`（波形・FFT）+ `AudioWorklet`（LUFS / 周波数重み付け） |
 | 録音 | `MediaRecorder` (webm/opus) |
@@ -82,10 +86,37 @@ AudioWorklet は Blob URL 経由でロードするため、`file://` プロト�
 [Analog VU Meter]    — 針式メーター
 [dBFS | dBA | LUFS-M | LUFS-S | LUFS-I]  — デジタル数値表示
 [START | REC | STOP | CAL]
-[PEAK RST | dBSPL | HIST]
-[History Graph]      — 折りたたみ式履歴グラフ
+[PEAK RST | dBSPL | HIST | ?]
+[History Graph]      — 折りたたみ式 (5min/30min/ALL 切替)
 [Calibration Panel]  — 折りたたみ式キャリブレーション
+[SW 更新バナー]      — 新バージョン検出時に画面下部に表示
+[インストールバナー] — PWA インストール促進
 ```
+
+## Changelog
+
+### v0.6.0（2026-05-19）
+- バグ修正: Wake Lock の `_active` 状態不整合、`stopAudio()` null クラッシュ、CAL ハンドラ null チェック漏れ
+- エラー処理: 録音保存失敗時の alert、履歴クリア失敗時の防御、`spectrum.draw` 引数修正
+- polish: LED バーの glow opacity 統一、CAL ボタン無効時の点滅フィードバック
+
+### v0.5.0（2026-05-18）
+- 履歴グラフに 5min / 30min / ALL 表示期間切替を追加
+- Service Worker 更新通知バナー、PWA インストールバナー（`beforeinstallprompt`）
+- 録音ファイル名を `loudness-YYYYMMDD-HHmmss.webm` 形式に変更
+- IndexedDB テスト追加（fake-indexeddb）
+
+### v0.4.0（2026-05-18）
+- Vitest 2 によるテストスイート導入（ユニット + インテグレーション、72テスト）
+- タッチターゲット 44px+、Safe Area 対応、`overscroll-behavior: none`
+
+### v0.3.1（2026-05-10）
+- LUFS リングバッファ最適化、ピークホールド decay 修正、CSP 追加、各種バグ修正
+
+### v0.3.0 以前
+- dBFS / dBA / dBC / LUFS M/S/I、オシロスコープ、LED バー、スペクトラム、履歴、録音、PWA
+
+---
 
 ## dBSPL キャリブレーション
 
