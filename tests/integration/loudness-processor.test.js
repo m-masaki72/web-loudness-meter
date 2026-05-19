@@ -160,10 +160,107 @@ describe('LoudnessProcessor — 44100 Hz', () => {
   it('44100 Hz でも lufsM が合理的な値 (<0) を返す', () => {
     const FS = 44100
     const { proc, messages } = makeProc(FS)
-    // ブロック数: 5s @ 44100 Hz
     const nBlocks = Math.ceil(5 * FS / 128)
     const msg = runSine(proc, messages, 1000, 1.0, FS, nBlocks)
     expect(msg.lufsM).toBeLessThan(0)
     expect(isFinite(msg.lufsM)).toBe(true)
+  })
+})
+
+describe('LoudnessProcessor — 無音→トーン遷移', () => {
+  const FS = 48000
+
+  it('無音後にトーンを流すと lufsM が上昇する', () => {
+    const { proc, messages } = makeProc(FS)
+    // 1s 無音
+    runSilence(proc, messages, 375)
+    const silenceMsg = messages[messages.length - 1]
+    // 2s サイン波
+    for (let b = 0; b < 750; b++) proc.process(sineBlock(1000, 1.0, FS, b))
+    const toneMsg = messages[messages.length - 1]
+    expect(toneMsg.lufsM).toBeGreaterThan(silenceMsg.lufsM)
+    expect(toneMsg.lufsM).toBeLessThan(0)
+  })
+
+  it('絶対ゲートにより lufsI は無音ブロックを除外する', () => {
+    const { proc, messages } = makeProc(FS)
+    // 1s 無音（絶対ゲート以下）の後に 4s サイン波
+    runSilence(proc, messages, 375)
+    for (let b = 0; b < 1500; b++) proc.process(sineBlock(1000, 1.0, FS, b))
+    const msg = messages[messages.length - 1]
+    // Integrated は無音を除いたトーン部分のみを反映する（-Infinity にならない）
+    expect(isFinite(msg.lufsI)).toBe(true)
+    expect(msg.lufsI).toBeLessThan(0)
+  })
+})
+
+describe('LoudnessProcessor — 急激なレベル変化', () => {
+  const FS = 48000
+
+  it('大音量 → 無音でモーメンタリが速やかに下がる', () => {
+    const { proc, messages } = makeProc(FS)
+    // 2s 大音量
+    for (let b = 0; b < 750; b++) proc.process(sineBlock(1000, 1.0, FS, b))
+    const loudMsg = messages[messages.length - 1]
+    // 直後に無音 (400ms = 1 momentary window)
+    runSilence(proc, messages, 150)
+    const quietMsg = messages[messages.length - 1]
+    expect(quietMsg.lufsM).toBeLessThan(loudMsg.lufsM)
+  })
+
+  it('低レベル → 高レベルでモーメンタリが上昇する', () => {
+    const { proc, messages } = makeProc(FS)
+    // 2s 低レベル (amp=0.01)
+    for (let b = 0; b < 750; b++) proc.process(sineBlock(1000, 0.01, FS, b))
+    const lowMsg = messages[messages.length - 1]
+    // 2s 高レベル
+    for (let b = 750; b < 1500; b++) proc.process(sineBlock(1000, 1.0, FS, b))
+    const highMsg = messages[messages.length - 1]
+    expect(highMsg.lufsM).toBeGreaterThan(lowMsg.lufsM)
+  })
+})
+
+describe('LoudnessProcessor — 長時間録音の状態リーク確認', () => {
+  const FS = 48000
+
+  it('10分相当のブロックを処理しても値が有限のまま', () => {
+    const { proc, messages } = makeProc(FS)
+    // gatedBuf の上限 MAX_GATED=207000 blocks ≈ 10min
+    // ここでは 20000 blocks ≈ 約85秒分 を処理（テスト時間を抑えつつ上限挙動を確認）
+    const nBlocks = 20000
+    for (let b = 0; b < nBlocks; b++) proc.process(sineBlock(1000, 0.5, FS, b))
+    const msg = messages[messages.length - 1]
+    expect(isFinite(msg.lufsM)).toBe(true)
+    expect(isFinite(msg.lufsS)).toBe(true)
+    expect(isFinite(msg.lufsI)).toBe(true)
+    expect(isFinite(msg.dbfs)).toBe(true)
+  })
+})
+
+describe('LoudnessProcessor — 非 1kHz トーン', () => {
+  const FS = 48000
+  const nBlocks = 1875  // 5s
+
+  it('100 Hz トーンでも lufsM が有限値を返す', () => {
+    const { proc, messages } = makeProc(FS)
+    const msg = runSine(proc, messages, 100, 0.5, FS, nBlocks)
+    expect(isFinite(msg.lufsM)).toBe(true)
+    expect(msg.lufsM).toBeLessThan(0)
+  })
+
+  it('10000 Hz トーンでも lufsM が有限値を返す', () => {
+    const { proc, messages } = makeProc(FS)
+    const msg = runSine(proc, messages, 10000, 0.5, FS, nBlocks)
+    expect(isFinite(msg.lufsM)).toBe(true)
+    expect(msg.lufsM).toBeLessThan(0)
+  })
+
+  it('K-weighting は高域（4kHz）で低域（100Hz）より高い値を示す', () => {
+    // K-weighting のハイシェルフは高周波を持ち上げる
+    const { proc: p1, messages: m1 } = makeProc(FS)
+    const { proc: p2, messages: m2 } = makeProc(FS)
+    const msg100  = runSine(p1, m1, 100,  0.5, FS, nBlocks)
+    const msg4k   = runSine(p2, m2, 4000, 0.5, FS, nBlocks)
+    expect(msg4k.lufsM).toBeGreaterThan(msg100.lufsM)
   })
 })

@@ -11,7 +11,7 @@ const ANGLE_MIN = -Math.PI * 0.78
 const ANGLE_MAX = -Math.PI * 0.22
 
 const SPRING   = 0.12
-const DAMPING  = 0.55
+const DAMPING  = 0.65  // 0.55 → 0.65: オーバーシュートを抑制しつつ応答性を維持
 
 function dbToAngle(db) {
   const t = Math.max(0, Math.min(1, (db - DB_MIN) / (DB_MAX - DB_MIN)))

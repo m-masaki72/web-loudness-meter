@@ -152,7 +152,7 @@ btnModeToggle.addEventListener('click', () => {
 
 // --- フォーマット ---
 function fmt(v) {
-  if (!isFinite(v) || v < -90) return '---.-'
+  if (!isFinite(v) || v < -90) return '---'
   return v.toFixed(1)
 }
 
@@ -163,7 +163,7 @@ function applyWarnClass(el, v) {
 
 // --- 描画ループ ---
 function renderLoop() {
-  if (!running) return
+  if (!running || !analyserReader) return
   rafId = requestAnimationFrame(renderLoop)
 
   analyserReader.read()
@@ -235,8 +235,8 @@ btnStart.addEventListener('click', async () => {
       }).catch(() => {})
     }, 1000)
 
-    // iOS案内（一度だけ）
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    // iOS案内（一度だけ）— userAgent より Web Share API の files 対応で判定
+    const isIOS = navigator.canShare && /iPhone|iPad|iPod/.test(navigator.platform ?? navigator.userAgent)
     if (isIOS && !localStorage.getItem('ios-guide-shown')) {
       iosGuide.classList.remove('hidden')
       localStorage.setItem('ios-guide-shown', '1')
@@ -404,9 +404,15 @@ iosClose.addEventListener('click', () => iosGuide.classList.add('hidden'))
 // --- SW 更新バナー ---
 btnSwUpdate.addEventListener('click', async () => {
   swUpdateBanner.classList.add('hidden')
-  const reg = await navigator.serviceWorker.getRegistration()
-  if (reg?.waiting) reg.waiting.postMessage('SKIP_WAITING')
-  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload())
+  const reg = await navigator.serviceWorker.getRegistration().catch(() => null)
+  if (reg?.waiting) {
+    reg.waiting.postMessage('SKIP_WAITING')
+    const onController = () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onController)
+      location.reload()
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', onController)
+  }
 })
 btnSwDismiss.addEventListener('click', () => swUpdateBanner.classList.add('hidden'))
 

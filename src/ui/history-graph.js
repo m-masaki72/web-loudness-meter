@@ -1,6 +1,6 @@
 /**
  * 計測履歴折れ線グラフ
- * 表示チャンネル: dBFS (緑) / dBA (黄) / LUFS-I (紫)
+ * 表示チャンネル: dBFS (緑) / dBA (黄) / LUFS-M (水色) / LUFS-I (紫)
  */
 
 const DB_MIN = -60
@@ -8,6 +8,7 @@ const DB_MAX = 0
 const LINES = [
   { key: 'dbfs',  color: '#00ff88', label: 'dBFS'   },
   { key: 'dba',   color: '#ffcc00', label: 'dBA'    },
+  { key: 'lufsM', color: '#00ccff', label: 'LUFS-M' },
   { key: 'lufsI', color: '#cc88ff', label: 'LUFS-I' },
 ]
 
@@ -44,7 +45,7 @@ export class HistoryGraph {
     ctx.fillStyle = '#0a0a0a'
     ctx.fillRect(0, 0, w, h)
 
-    if (this._samples.length < 2) {
+    if (this._samples.length === 0) {
       ctx.fillStyle = '#333'
       ctx.font = '10px Courier New'
       ctx.textAlign = 'center'
@@ -62,7 +63,7 @@ export class HistoryGraph {
       return PAD_B + plotH * (1 - (clamped - DB_MIN) / (DB_MAX - DB_MIN))
     }
 
-    // グリッド線（-12dB, -3dB）
+    // グリッド線
     for (const db of [-60, -48, -36, -24, -12, 0]) {
       const y = yOf(db)
       ctx.strokeStyle = db === 0 ? '#3a1a1a' : '#1e1e1e'
@@ -70,7 +71,7 @@ export class HistoryGraph {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
     }
 
-    // 時間軸ラベル
+    // 時間軸ラベル（左端・中間・右端）
     const totalSec = tRange / 1000
     ctx.fillStyle = '#333'
     ctx.font = '8px Courier New'
@@ -78,6 +79,28 @@ export class HistoryGraph {
     ctx.fillText('0s', 2, h - 2)
     ctx.textAlign = 'right'
     ctx.fillText(`${Math.round(totalSec)}s`, w - 2, h - 2)
+    if (totalSec >= 10) {
+      ctx.textAlign = 'center'
+      const midSec = Math.round(totalSec / 2)
+      ctx.fillText(`${midSec}s`, w / 2, h - 2)
+    }
+
+    // 1サンプルのみの場合は各チャンネルにドット描画
+    if (this._samples.length === 1) {
+      const s = this._samples[0]
+      const x = w / 2
+      for (const line of LINES) {
+        const val = s[line.key] ?? -Infinity
+        if (!isFinite(val)) continue
+        ctx.fillStyle = line.color
+        ctx.beginPath()
+        ctx.arc(x, yOf(val), 3, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.shadowBlur = 0
+      this._drawLegend(ctx, w)
+      return
+    }
 
     // 折れ線
     for (const line of LINES) {
@@ -88,7 +111,7 @@ export class HistoryGraph {
       ctx.beginPath()
       let started = false
       for (const s of this._samples) {
-        const val = s[line.key]
+        const val = s[line.key] ?? -Infinity
         if (!isFinite(val)) { started = false; continue }
         const x = xOf(s.timestamp)
         const y = yOf(val)
@@ -99,14 +122,18 @@ export class HistoryGraph {
     }
     ctx.shadowBlur = 0
 
-    // 凡例
-    let lx = 4
+    this._drawLegend(ctx, w)
+  }
+
+  _drawLegend(ctx, w) {
     ctx.font = '8px Courier New'
+    let lx = 4
     for (const line of LINES) {
       ctx.fillStyle = line.color
       ctx.textAlign = 'left'
       ctx.fillText(line.label, lx, 10)
-      lx += ctx.measureText(line.label).width + 10
+      lx += ctx.measureText(line.label).width + 8
+      if (lx > w - 40) break  // 画面幅を超えたら打ち切り
     }
   }
 }
