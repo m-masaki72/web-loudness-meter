@@ -8,11 +8,20 @@
     "build": "vite build",
     "preview": "vite preview",
     "gen-icons": "node scripts/gen-icons.mjs",
+    "gen-test-audio": "node scripts/gen-test-audio.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:all": "vitest run && playwright test",
+    "playwright:install": "playwright install chromium"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@vitest/coverage-v8": "^2.1.9",
     "fake-indexeddb": "^6.2.5",
     "sharp": "^0.34.5",
