@@ -2,7 +2,7 @@
 
 スマートフォン・PCブラウザで動作するリアルタイム音響計測ツール。インストール不要。
 
-**公開 URL:** https://m-masaki72.github.io/web-loudness-meter/
+**公開 URL:** https://loudness-meter.morilab-garage.com/
 
 ## 機能
 

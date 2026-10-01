@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/web-loudness-meter/',
+  base: './',
   server: {
     host: true,
   },

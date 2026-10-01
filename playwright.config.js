@@ -24,8 +24,8 @@ export default defineConfig({
   reporter: [['html', { outputFolder: 'tests/e2e/report', open: 'never' }]],
 
   use: {
-    // vite.config.js の base: '/web-loudness-meter/' に合わせる
-    baseURL: 'http://localhost:5173/web-loudness-meter/',
+    // vite.config.js の base は相対パス（./）なので dev server はルートで配信される
+    baseURL: 'http://localhost:5173/',
     trace: 'on-first-retry',
     video: 'on-first-retry',
   },
@@ -69,7 +69,7 @@ export default defineConfig({
 
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173/web-loudness-meter/',
+    url: 'http://localhost:5173/',
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },
