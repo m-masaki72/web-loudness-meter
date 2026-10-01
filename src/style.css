@@ -87,6 +87,7 @@ html, body {
   text-shadow: 0 0 6px rgba(0,255,136,0.4);
 }
 .title-text {
+  margin: 0;
   font-size: 13px;
   font-weight: bold;
   letter-spacing: 4px;
