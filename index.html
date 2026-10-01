@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-  <title>Loudness Meter</title>
+  <title>Loudness Meter - ブラウザで使えるLUFS・騒音レベル計測ツール</title>
   <link rel="stylesheet" href="/src/style.css" />
   <meta name="description" content="インストール不要のブラウザ音響計測ツール。LUFS/dBFS/dBA/FFTスペクトラムをリアルタイム表示。PWA対応。">
   <link rel="canonical" href="https://loudness-meter.morilab-garage.com/">
@@ -379,5 +379,37 @@
   </div>
 
   <script type="module" src="/src/main.js"></script>
+<style>
+.mlg-about{box-sizing:border-box;max-width:720px;margin:0 auto;padding:2.5rem 1.25rem 2rem;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.85;color:inherit;text-align:left}
+.mlg-about *{box-sizing:border-box}
+.mlg-about h2{font-size:1.35rem;line-height:1.4;margin:0 0 .75rem;font-weight:700}
+.mlg-about h3{font-size:1.05rem;margin:1.75rem 0 .5rem;font-weight:700}
+.mlg-about p{margin:.5rem 0}
+.mlg-about ul,.mlg-about ol{margin:.5rem 0;padding-left:1.4em}
+.mlg-about ul{list-style:disc}
+.mlg-about ol{list-style:decimal}
+.mlg-about li{margin:.2rem 0}
+.mlg-about dt{font-weight:700;margin-top:.75rem}
+.mlg-about dd{margin:.2rem 0 0}
+.mlg-about a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.mlg-credit{margin-top:2rem;padding-top:1rem;border-top:1px solid currentColor;border-top-color:color-mix(in srgb,currentColor 25%,transparent);font-size:13px;opacity:.85;display:flex;flex-wrap:wrap;gap:.25rem 1rem}
+#mlg-about-dialog{width:min(92vw,720px);max-height:85dvh;padding:0;border:0;border-radius:16px;background:#fff;color:#1a1a1a;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+#mlg-about-dialog::backdrop{background:rgba(0,0,0,.55)}
+#mlg-about-dialog .mlg-about{padding-top:1.5rem}
+.mlg-close{position:sticky;top:0;float:right;margin:.5rem .5rem 0 0;width:44px;height:44px;border:0;border-radius:50%;background:#eee;color:#1a1a1a;font-size:22px;cursor:pointer}
+.mlg-open{position:fixed;z-index:2147483000;width:44px;height:44px;padding:0;border:0;border-radius:50%;font-size:20px !important;background:rgba(0,0,0,.6);color:#fff;font:600 13px/1 system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(4px)}
+.mlg-open:focus-visible,.mlg-close:focus-visible{outline:3px solid #27ff0b;outline-offset:2px}
+</style>
+<section class="mlg-about" aria-labelledby="mlg-about-title">
+<h2 id="mlg-about-title">Loudness Meter（ブラウザ音響計測ツール）について</h2>
+<p>スマートフォン・PCのブラウザで動くリアルタイム音響計測ツールです。インストール不要で、マイクから入力された音のラウドネスやスペクトラムをその場で計測できます。</p><p>ITU-R BS.1770-4 / EBU R128 準拠の LUFS 計測、FFT スペクトラムアナライザー、騒音レベル判定（dBSPL キャリブレーション対応）などを搭載しています。</p>
+<h3>使い方</h3>
+<ol><li>計測を開始し、ブラウザのマイク利用を許可します。</li><li>LUFS・dBFS・dBA などの数値とスペクトラムがリアルタイムで表示されます。</li><li>必要に応じて表示モードを切り替えたり、計測履歴を確認したりできます。</li></ol>
+<h3>主な機能・特徴</h3>
+<ul><li>ITU-R BS.1770-4 / EBU R128 準拠の LUFS 計測</li><li>FFT スペクトラムアナライザー</li><li>騒音レベル判定（dBSPL キャリブレーション対応）</li><li>AudioWorklet による低遅延 DSP 処理</li><li>IndexedDB への計測履歴保存</li><li>PWA インストール対応</li></ul>
+<h3>よくある質問</h3>
+<dl><dt>無料で使えますか？</dt><dd>はい。無料で、会員登録やアプリのインストールも不要です。ブラウザでこのページを開くだけで使えます。</dd><dt>マイクの音声は送信されますか？</dt><dd>いいえ。音声の解析はすべてお使いのブラウザ内で行われ、サーバーへ送信されることはありません。</dd></dl>
+<p class="mlg-credit"><span>制作: <a href="https://morilab-garage.com/">MasakiMori（Mori Lab）</a></span><a href="https://morilab-garage.com/projects/web-loudness-meter/">制作の背景・技術構成</a><a href="https://morilab-garage.com/projects/">ほかの制作物</a><a href="https://morilab-garage.com/privacy/">プライバシーポリシー</a></p>
+</section>
 </body>
 </html>

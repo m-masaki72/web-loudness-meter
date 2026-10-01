@@ -1,4 +1,4 @@
-const CACHE = 'loudness-meter-v3'
+const CACHE = 'loudness-meter-v4'
 
 self.addEventListener('install', e => {
   // ルートだけ事前キャッシュ。JS/CSS はハッシュ付きなので fetch 時に動的キャッシュ

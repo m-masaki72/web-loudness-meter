@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://loudness-meter.morilab-garage.com/sitemap.xml
