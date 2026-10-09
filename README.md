@@ -148,3 +148,7 @@ SIMPLE / EXPERT モードで表示内容が切り替わります。
 4. **dBSPL ON** に切り替えると補正済み値が表示される（`localStorage` に永続保存）
 
 > 広帯域ゲイン補正のみのため、マイクの周波数特性は補正されません。
+
+## 紹介ページ
+
+- [制作物ページ（Mori Lab）](https://morilab-garage.com/projects/web-loudness-meter/)
