@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src blob: 'self'" />
+    content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; worker-src blob: 'self'; connect-src 'self' https://cloudflareinsights.com" />
   <meta name="theme-color" content="#1a1a1a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -412,5 +412,7 @@
 <dl><dt>無料で使えますか？</dt><dd>はい。無料で、会員登録やアプリのインストールも不要です。ブラウザでこのページを開くだけで使えます。</dd><dt>マイクの音声は送信されますか？</dt><dd>いいえ。音声の解析はすべてお使いのブラウザ内で行われ、サーバーへ送信されることはありません。</dd></dl>
 <p class="mlg-credit"><span>制作: <a href="https://morilab-garage.com/">MasakiMori（Mori Lab）</a></span><a href="https://morilab-garage.com/projects/web-loudness-meter/">制作の背景・技術構成</a><a href="https://morilab-garage.com/projects/">ほかの制作物</a><a href="https://morilab-garage.com/privacy/">プライバシーポリシー</a></p>
 </section>
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "f9c19e1133b547578ea0f0761266f537"}'></script>
 </body>
 </html>
